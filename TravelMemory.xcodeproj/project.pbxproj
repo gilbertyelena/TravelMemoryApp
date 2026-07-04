@@ -1,0 +1,728 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		57ABB13C2FAF66120007FDE0 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 57ABB1322FAF66120007FDE0 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		57ABB13A2FAF66120007FDE0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 57F6AFFC2FA14FF400039210 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 57ABB1312FAF66120007FDE0;
+			remoteInfo = ShareExtension;
+		};
+		57F6B0142FA14FF500039210 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 57F6AFFC2FA14FF400039210 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 57F6B0032FA14FF400039210;
+			remoteInfo = TravelMemory;
+		};
+		57F6B01E2FA14FF500039210 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 57F6AFFC2FA14FF400039210 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 57F6B0032FA14FF400039210;
+			remoteInfo = TravelMemory;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		57ABB1412FAF66120007FDE0 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				57ABB13C2FAF66120007FDE0 /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		57ABB1322FAF66120007FDE0 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		57F6B0042FA14FF400039210 /* TravelMemory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TravelMemory.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		57F6B0132FA14FF500039210 /* TravelMemoryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TravelMemoryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		57F6B01D2FA14FF500039210 /* TravelMemoryUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TravelMemoryUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		57ABB13D2FAF66120007FDE0 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 57ABB1312FAF66120007FDE0 /* ShareExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		57ABB1332FAF66120007FDE0 /* ShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				57ABB13D2FAF66120007FDE0 /* Exceptions for "ShareExtension" folder in "ShareExtension" target */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
+		57F6B0062FA14FF400039210 /* TravelMemory */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TravelMemory;
+			sourceTree = "<group>";
+		};
+		57F6B0162FA14FF500039210 /* TravelMemoryTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TravelMemoryTests;
+			sourceTree = "<group>";
+		};
+		57F6B0202FA14FF500039210 /* TravelMemoryUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TravelMemoryUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		57ABB12F2FAF66120007FDE0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B0012FA14FF400039210 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B0102FA14FF500039210 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B01A2FA14FF500039210 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		57F6AFFB2FA14FF400039210 = {
+			isa = PBXGroup;
+			children = (
+				57F6B0062FA14FF400039210 /* TravelMemory */,
+				57F6B0162FA14FF500039210 /* TravelMemoryTests */,
+				57F6B0202FA14FF500039210 /* TravelMemoryUITests */,
+				57ABB1332FAF66120007FDE0 /* ShareExtension */,
+				57F6B0052FA14FF400039210 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		57F6B0052FA14FF400039210 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				57F6B0042FA14FF400039210 /* TravelMemory.app */,
+				57F6B0132FA14FF500039210 /* TravelMemoryTests.xctest */,
+				57F6B01D2FA14FF500039210 /* TravelMemoryUITests.xctest */,
+				57ABB1322FAF66120007FDE0 /* ShareExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		57ABB1312FAF66120007FDE0 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57ABB13E2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				57ABB12E2FAF66120007FDE0 /* Sources */,
+				57ABB12F2FAF66120007FDE0 /* Frameworks */,
+				57ABB1302FAF66120007FDE0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				57ABB1332FAF66120007FDE0 /* ShareExtension */,
+			);
+			name = ShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ShareExtension;
+			productReference = 57ABB1322FAF66120007FDE0 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		57F6B0032FA14FF400039210 /* TravelMemory */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57F6B0272FA14FF500039210 /* Build configuration list for PBXNativeTarget "TravelMemory" */;
+			buildPhases = (
+				57F6B0002FA14FF400039210 /* Sources */,
+				57F6B0012FA14FF400039210 /* Frameworks */,
+				57F6B0022FA14FF400039210 /* Resources */,
+				57ABB1412FAF66120007FDE0 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				57ABB13B2FAF66120007FDE0 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				57F6B0062FA14FF400039210 /* TravelMemory */,
+			);
+			name = TravelMemory;
+			packageProductDependencies = (
+			);
+			productName = TravelMemory;
+			productReference = 57F6B0042FA14FF400039210 /* TravelMemory.app */;
+			productType = "com.apple.product-type.application";
+		};
+		57F6B0122FA14FF500039210 /* TravelMemoryTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57F6B02A2FA14FF500039210 /* Build configuration list for PBXNativeTarget "TravelMemoryTests" */;
+			buildPhases = (
+				57F6B00F2FA14FF500039210 /* Sources */,
+				57F6B0102FA14FF500039210 /* Frameworks */,
+				57F6B0112FA14FF500039210 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				57F6B0152FA14FF500039210 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				57F6B0162FA14FF500039210 /* TravelMemoryTests */,
+			);
+			name = TravelMemoryTests;
+			packageProductDependencies = (
+			);
+			productName = TravelMemoryTests;
+			productReference = 57F6B0132FA14FF500039210 /* TravelMemoryTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		57F6B01C2FA14FF500039210 /* TravelMemoryUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57F6B02D2FA14FF500039210 /* Build configuration list for PBXNativeTarget "TravelMemoryUITests" */;
+			buildPhases = (
+				57F6B0192FA14FF500039210 /* Sources */,
+				57F6B01A2FA14FF500039210 /* Frameworks */,
+				57F6B01B2FA14FF500039210 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				57F6B01F2FA14FF500039210 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				57F6B0202FA14FF500039210 /* TravelMemoryUITests */,
+			);
+			name = TravelMemoryUITests;
+			packageProductDependencies = (
+			);
+			productName = TravelMemoryUITests;
+			productReference = 57F6B01D2FA14FF500039210 /* TravelMemoryUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		57F6AFFC2FA14FF400039210 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					57ABB1312FAF66120007FDE0 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					57F6B0032FA14FF400039210 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					57F6B0122FA14FF500039210 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 57F6B0032FA14FF400039210;
+					};
+					57F6B01C2FA14FF500039210 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 57F6B0032FA14FF400039210;
+					};
+				};
+			};
+			buildConfigurationList = 57F6AFFF2FA14FF400039210 /* Build configuration list for PBXProject "TravelMemory" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 57F6AFFB2FA14FF400039210;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 57F6B0052FA14FF400039210 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				57F6B0032FA14FF400039210 /* TravelMemory */,
+				57F6B0122FA14FF500039210 /* TravelMemoryTests */,
+				57F6B01C2FA14FF500039210 /* TravelMemoryUITests */,
+				57ABB1312FAF66120007FDE0 /* ShareExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		57ABB1302FAF66120007FDE0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B0022FA14FF400039210 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B0112FA14FF500039210 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B01B2FA14FF500039210 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		57ABB12E2FAF66120007FDE0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B0002FA14FF400039210 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B00F2FA14FF500039210 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		57F6B0192FA14FF500039210 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		57ABB13B2FAF66120007FDE0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 57ABB1312FAF66120007FDE0 /* ShareExtension */;
+			targetProxy = 57ABB13A2FAF66120007FDE0 /* PBXContainerItemProxy */;
+		};
+		57F6B0152FA14FF500039210 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 57F6B0032FA14FF400039210 /* TravelMemory */;
+			targetProxy = 57F6B0142FA14FF500039210 /* PBXContainerItemProxy */;
+		};
+		57F6B01F2FA14FF500039210 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 57F6B0032FA14FF400039210 /* TravelMemory */;
+			targetProxy = 57F6B01E2FA14FF500039210 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		57ABB13F2FAF66120007FDE0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		57ABB1402FAF66120007FDE0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		57F6B0252FA14FF500039210 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		57F6B0262FA14FF500039210 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		57F6B0282FA14FF500039210 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TravelMemory/TravelMemory.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Travel Steward uses Face ID to protect your sensitive travel documents in the Secure Vault.";
+				INFOPLIST_KEY_UIAppFonts = "PlusJakartaSans-Bold.ttf Inter-Regular.ttf Inter-Medium.ttf Inter-SemiBold.ttf";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		57F6B0292FA14FF500039210 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TravelMemory/TravelMemory.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Travel Steward uses Face ID to protect your sensitive travel documents in the Secure Vault.";
+				INFOPLIST_KEY_UIAppFonts = "PlusJakartaSans-Bold.ttf Inter-Regular.ttf Inter-Medium.ttf Inter-SemiBold.ttf";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		57F6B02B2FA14FF500039210 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelMemoryTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelMemory.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TravelMemory";
+			};
+			name = Debug;
+		};
+		57F6B02C2FA14FF500039210 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelMemoryTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelMemory.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TravelMemory";
+			};
+			name = Release;
+		};
+		57F6B02E2FA14FF500039210 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelMemoryUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TravelMemory;
+			};
+			name = Debug;
+		};
+		57F6B02F2FA14FF500039210 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelMemoryUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TravelMemory;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		57ABB13E2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57ABB13F2FAF66120007FDE0 /* Debug */,
+				57ABB1402FAF66120007FDE0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		57F6AFFF2FA14FF400039210 /* Build configuration list for PBXProject "TravelMemory" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57F6B0252FA14FF500039210 /* Debug */,
+				57F6B0262FA14FF500039210 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		57F6B0272FA14FF500039210 /* Build configuration list for PBXNativeTarget "TravelMemory" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57F6B0282FA14FF500039210 /* Debug */,
+				57F6B0292FA14FF500039210 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		57F6B02A2FA14FF500039210 /* Build configuration list for PBXNativeTarget "TravelMemoryTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57F6B02B2FA14FF500039210 /* Debug */,
+				57F6B02C2FA14FF500039210 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		57F6B02D2FA14FF500039210 /* Build configuration list for PBXNativeTarget "TravelMemoryUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57F6B02E2FA14FF500039210 /* Debug */,
+				57F6B02F2FA14FF500039210 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 57F6AFFC2FA14FF400039210 /* Project object */;
+}

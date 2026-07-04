@@ -1,0 +1,215 @@
+//
+//  EditActivityView.swift
+//  TravelMemory
+//
+//  Edit a trip activity (diving, boat trip, tour, etc.)
+//  with category picker, times, provider, and notes.
+//
+
+import SwiftUI
+import SwiftData
+
+struct EditActivityView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var activity: TripActivity
+    
+    @State private var activityName = ""
+    @State private var provider = ""
+    @State private var location = ""
+    @State private var selectedCategory: ActivityCategory = .other
+    @State private var startTime = Date()
+    @State private var endTime = Date()
+    @State private var confirmationCode = ""
+    @State private var notes = ""
+    @State private var priceInfo = ""
+    @State private var showDeleteConfirm = false
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.voyagerBackground.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: VoyagerSpacing.stackLarge) {
+                        formField(title: "ACTIVITY NAME", placeholder: "e.g. Scuba Diving", text: $activityName)
+                        
+                        // Category chips
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("CATEGORY")
+                                .font(VoyagerFont.labelCapsFallback)
+                                .tracking(1.0)
+                                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                            
+                            LazyVGrid(columns: [
+                                GridItem(.flexible()),
+                                GridItem(.flexible()),
+                                GridItem(.flexible())
+                            ], spacing: 8) {
+                                ForEach(ActivityCategory.allCases, id: \.rawValue) { cat in
+                                    categoryChip(cat)
+                                }
+                            }
+                        }
+                        
+                        formField(title: "PROVIDER", placeholder: "e.g. Blue Ocean Divers", text: $provider)
+                        formField(title: "LOCATION", placeholder: "Meeting point or venue", text: $location)
+                        
+                        dateField(title: "START TIME", date: $startTime)
+                        dateField(title: "END TIME", date: $endTime)
+                        
+                        HStack(spacing: 10) {
+                            formField(title: "CONFIRMATION", placeholder: "Ref code", text: $confirmationCode)
+                            formField(title: "PRICE", placeholder: "€85pp", text: $priceInfo)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("NOTES")
+                                .font(VoyagerFont.labelCapsFallback)
+                                .tracking(1.0)
+                                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                            TextField("Special instructions, what to bring...", text: $notes, axis: .vertical)
+                                .font(VoyagerFont.bodyLargeFallback)
+                                .foregroundStyle(Color.voyagerOnSurface)
+                                .lineLimit(2...4)
+                                .padding(12)
+                                .background(Color.voyagerInputBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
+                                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
+                                )
+                        }
+                        
+                        Button { save() } label: { Text("SAVE") }
+                            .buttonStyle(VoyagerPrimaryButtonStyle())
+                            .padding(.top, 8)
+                        
+                        Button(role: .destructive) { showDeleteConfirm = true } label: {
+                            Text("DELETE ACTIVITY")
+                                .font(VoyagerFont.labelCapsFallback)
+                                .tracking(0.6)
+                                .foregroundStyle(Color.voyagerError)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                }
+            }
+            .navigationTitle("Edit Activity")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                }
+            }
+            .alert("Delete Activity?", isPresented: $showDeleteConfirm) {
+                Button("Delete", role: .destructive) {
+                    modelContext.delete(activity)
+                    try? modelContext.save()
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear { loadValues() }
+    }
+    
+    // MARK: - Category Chip
+    
+    private func categoryChip(_ cat: ActivityCategory) -> some View {
+        let isSelected = selectedCategory == cat
+        let catColor = Color(hex: cat.color)
+        
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) { selectedCategory = cat }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: cat.icon)
+                    .font(.system(size: 12))
+                Text(cat.label)
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(isSelected ? .white : catColor)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(isSelected ? catColor : catColor.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(catColor.opacity(isSelected ? 0 : 0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Load / Save
+    
+    private func loadValues() {
+        activityName = activity.activityName
+        provider = activity.provider
+        location = activity.location
+        selectedCategory = activity.category
+        startTime = activity.startTime
+        endTime = activity.endTime
+        confirmationCode = activity.confirmationCode
+        notes = activity.notes
+        priceInfo = activity.priceInfo
+    }
+    
+    private func save() {
+        activity.activityName = activityName
+        activity.provider = provider
+        activity.location = location
+        activity.category = selectedCategory
+        activity.startTime = startTime
+        activity.endTime = endTime
+        activity.confirmationCode = confirmationCode
+        activity.notes = notes
+        activity.priceInfo = priceInfo
+        try? modelContext.save()
+        dismiss()
+    }
+    
+    // MARK: - Helpers
+    
+    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(VoyagerFont.labelCapsFallback)
+                .tracking(1.0)
+                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+            TextField(placeholder, text: text)
+                .font(VoyagerFont.bodyLargeFallback)
+                .foregroundStyle(Color.voyagerOnSurface)
+                .padding(12)
+                .background(Color.voyagerInputBackground)
+                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+                .overlay(
+                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
+                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
+                )
+        }
+    }
+    
+    private func dateField(title: String, date: Binding<Date>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(VoyagerFont.labelCapsFallback)
+                .tracking(1.0)
+                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+            DatePicker("", selection: date)
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .tint(Color.voyagerPrimary)
+                .padding(10)
+                .background(Color.voyagerInputBackground)
+                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+        }
+    }
+}
