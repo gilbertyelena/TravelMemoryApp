@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - Timeline Entry (unified wrapper)
 
@@ -51,6 +52,9 @@ struct TripDetailView: View {
     @State private var editingActivity: TripActivity?
     @State private var showDeleteConfirm = false
     @State private var appeared = false
+    /// IDs of freshly created (draft) items — deleted again if their
+    /// editor is dismissed without saving.
+    @State private var newItemIDs: Set<UUID> = []
     
     /// All items merged and sorted chronologically
     private var timelineEntries: [TimelineEntry] {
@@ -106,7 +110,7 @@ struct TripDetailView: View {
                             Image(systemName: "trash")
                             Text("DELETE TRIP")
                         }
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .tracking(0.6)
                         .foregroundStyle(Color.voyagerError)
                         .frame(maxWidth: .infinity)
@@ -144,7 +148,7 @@ struct TripDetailView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text(trip.name)
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
             }
@@ -161,33 +165,58 @@ struct TripDetailView: View {
         .sheet(isPresented: $showAddItem) {
             AddItemSheet(
                 trip: trip,
+                onFlightCreated: { flight in
+                    newItemIDs.insert(flight.id)
+                    editingFlight = flight
+                },
+                onHotelCreated: { hotel in
+                    newItemIDs.insert(hotel.id)
+                    editingHotel = hotel
+                },
+                onCarCreated: { car in
+                    newItemIDs.insert(car.id)
+                    editingCar = car
+                },
                 onActivityCreated: { activity in
+                    newItemIDs.insert(activity.id)
                     editingActivity = activity
                 },
                 onDiningCreated: { dining in
+                    newItemIDs.insert(dining.id)
                     editingDining = dining
                 }
             )
         }
-        .sheet(item: $editingFlight) { flight in
-            EditFlightView(flight: flight)
+        .sheet(item: $editingFlight, onDismiss: { newItemIDs.removeAll() }) { flight in
+            EditFlightView(
+                flight: flight,
+                isNew: newItemIDs.contains(flight.id),
+                onSaveAndAddReturn: { returnFlight in
+                    // Insert the id after the sheet's onDismiss has cleared
+                    // the set, or the return draft loses its "new" status.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        newItemIDs.insert(returnFlight.id)
+                        editingFlight = returnFlight
+                    }
+                }
+            )
         }
-        .sheet(item: $editingHotel) { hotel in
-            EditHotelView(hotel: hotel)
+        .sheet(item: $editingHotel, onDismiss: { newItemIDs.removeAll() }) { hotel in
+            EditHotelView(hotel: hotel, isNew: newItemIDs.contains(hotel.id))
         }
-        .sheet(item: $editingCar) { car in
-            EditCarView(car: car)
+        .sheet(item: $editingCar, onDismiss: { newItemIDs.removeAll() }) { car in
+            EditCarView(car: car, isNew: newItemIDs.contains(car.id))
         }
-        .sheet(item: $editingDining) { dining in
-            EditDiningView(reservation: dining)
+        .sheet(item: $editingDining, onDismiss: { newItemIDs.removeAll() }) { dining in
+            EditDiningView(reservation: dining, isNew: newItemIDs.contains(dining.id))
         }
-        .sheet(item: $editingActivity) { activity in
-            EditActivityView(activity: activity)
+        .sheet(item: $editingActivity, onDismiss: { newItemIDs.removeAll() }) { activity in
+            EditActivityView(activity: activity, isNew: newItemIDs.contains(activity.id))
         }
         .alert("Delete Trip?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 modelContext.delete(trip)
-                try? modelContext.save()
+                modelContext.saveOrLog()
                 dismiss()
             }
             Button("Cancel", role: .cancel) {}
@@ -214,11 +243,11 @@ struct TripDetailView: View {
                 .padding(.bottom, 4)
             
             Text(trip.destination.isEmpty ? trip.name : trip.destination)
-                .font(VoyagerFont.headlineLargeFallback)
+                .font(VoyagerFont.headlineLarge)
                 .foregroundStyle(Color.voyagerOnBackground)
             
             Text("\(trip.dateRangeText) • \(trip.durationDays) Day\(trip.durationDays == 1 ? "" : "s")")
-                .font(VoyagerFont.bodyLargeFallback)
+                .font(VoyagerFont.bodyLarge)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
             // Status pills
@@ -226,10 +255,10 @@ struct TripDetailView: View {
                 ForEach(TripStatus.allCases, id: \.rawValue) { status in
                     Button {
                         trip.status = status
-                        try? modelContext.save()
+                        modelContext.saveOrLog()
                     } label: {
                         Text(status.rawValue.uppercased())
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.4)
                             .foregroundStyle(trip.status == status ? .white : Color.voyagerOnSurfaceVariant)
                             .padding(.horizontal, 12)
@@ -274,7 +303,7 @@ struct TripDetailView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 8) {
                             Text(dayFmt.string(from: group.key).uppercased())
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(1.0)
                                 .foregroundStyle(isToday ? Color.voyagerPrimaryAccent : Color.voyagerOnSurfaceVariant)
                             
@@ -348,7 +377,7 @@ struct TripDetailView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(Color.voyagerPrimaryAccent)
                         Text(flight.airlineAndFlight.uppercased())
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
@@ -361,9 +390,9 @@ struct TripDetailView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(flight.departureAirport)
-                            .font(VoyagerFont.headlineMediumFallback)
+                            .font(VoyagerFont.headlineMedium)
                         Text(flight.departureCity)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                     Spacer()
@@ -372,9 +401,9 @@ struct TripDetailView: View {
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(flight.arrivalAirport)
-                            .font(VoyagerFont.headlineMediumFallback)
+                            .font(VoyagerFont.headlineMedium)
                         Text(flight.arrivalCity)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                 }
@@ -384,7 +413,7 @@ struct TripDetailView: View {
                     HStack {
                         if !flight.gate.isEmpty {
                             Text("GATE \(flight.gate)")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .foregroundStyle(Color.voyagerOnSurface)
                                 .padding(.horizontal, 8).padding(.vertical, 3)
                                 .background(Color.voyagerSurfaceVariant)
@@ -393,7 +422,7 @@ struct TripDetailView: View {
                         Spacer()
                         if !flight.confirmationCode.isEmpty {
                             Text("Ref: \(flight.confirmationCode)")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .foregroundStyle(Color.voyagerPrimary)
                         }
                     }
@@ -424,7 +453,7 @@ struct TripDetailView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(Color.voyagerTertiary)
                         Text("CHECK-IN • \(hotel.nightsCount) NIGHT\(hotel.nightsCount == 1 ? "" : "S")")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
@@ -432,7 +461,7 @@ struct TripDetailView: View {
                 }
                 
                 Text(hotel.hotelName)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
@@ -441,12 +470,12 @@ struct TripDetailView: View {
                         .font(.system(size: 12))
                     Text("\(fmt.string(from: hotel.checkInDate)) → \(fmt.string(from: hotel.checkOutDate))")
                 }
-                .font(VoyagerFont.bodySmallFallback)
+                .font(VoyagerFont.bodySmall)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 
                 if !hotel.confirmationCode.isEmpty {
                     Text("Ref: \(hotel.confirmationCode)")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .foregroundStyle(Color.voyagerPrimary)
                 }
             }
@@ -475,14 +504,14 @@ struct TripDetailView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(Color.voyagerPrimary)
                         Text("CAR PICKUP")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                     Spacer()
                     if car.isPrepaid {
                         Text("PRE-PAID")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.4)
                             .foregroundStyle(Color.voyagerTertiary)
                             .padding(.horizontal, 8).padding(.vertical, 4)
@@ -492,18 +521,18 @@ struct TripDetailView: View {
                 }
                 
                 Text(car.company)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
                 if !car.vehicleType.isEmpty {
                     Text(car.vehicleType)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
                 
                 Text("\(fmt.string(from: car.pickupTime)) → \(fmt.string(from: car.dropoffTime))")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
             .padding(12)
@@ -531,7 +560,7 @@ struct TripDetailView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(Color(hex: "#FFB868"))
                         Text("DINING")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
@@ -542,7 +571,7 @@ struct TripDetailView: View {
                 }
                 
                 Text(dining.restaurantName.isEmpty ? "Restaurant" : dining.restaurantName)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
@@ -552,7 +581,7 @@ struct TripDetailView: View {
                             Image(systemName: "person.2")
                                 .font(.system(size: 11))
                             Text("\(dining.partySize)")
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                         }
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
@@ -562,7 +591,7 @@ struct TripDetailView: View {
                             Image(systemName: "mappin")
                                 .font(.system(size: 11))
                             Text(dining.address)
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .lineLimit(1)
                         }
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
@@ -571,7 +600,7 @@ struct TripDetailView: View {
                 
                 if !dining.confirmationCode.isEmpty {
                     Text("Ref: \(dining.confirmationCode)")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .foregroundStyle(Color.voyagerPrimary)
                 }
             }
@@ -601,7 +630,7 @@ struct TripDetailView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(catColor)
                         Text(activity.category.label.uppercased())
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
@@ -612,7 +641,7 @@ struct TripDetailView: View {
                 }
                 
                 Text(activity.activityName.isEmpty ? "Activity" : activity.activityName)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
@@ -622,7 +651,7 @@ struct TripDetailView: View {
                             Image(systemName: "building.2")
                                 .font(.system(size: 11))
                             Text(activity.provider)
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .lineLimit(1)
                         }
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
@@ -633,7 +662,7 @@ struct TripDetailView: View {
                             Image(systemName: "mappin")
                                 .font(.system(size: 11))
                             Text(activity.location)
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .lineLimit(1)
                         }
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
@@ -643,7 +672,7 @@ struct TripDetailView: View {
                 HStack {
                     if !activity.priceInfo.isEmpty {
                         Text(activity.priceInfo)
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .foregroundStyle(catColor)
                             .padding(.horizontal, 8).padding(.vertical, 3)
                             .background(catColor.opacity(0.1))
@@ -652,7 +681,7 @@ struct TripDetailView: View {
                     Spacer()
                     if !activity.confirmationCode.isEmpty {
                         Text("Ref: \(activity.confirmationCode)")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .foregroundStyle(Color.voyagerPrimary)
                     }
                 }
@@ -676,7 +705,7 @@ struct TripDetailView: View {
                 .font(.system(size: 40, weight: .ultraLight))
                 .foregroundStyle(Color.voyagerOnSurfaceVariant.opacity(0.4))
             Text("No itinerary items yet")
-                .font(VoyagerFont.bodySmallFallback)
+                .font(VoyagerFont.bodySmall)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             Text("Tap the + button to add flights,\naccommodation, dining, or activities")
                 .font(.system(size: 13))
@@ -702,17 +731,17 @@ struct TripDetailView: View {
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Packing List")
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     
                     if totalItems > 0 {
                         Text("\(packedItems)/\(totalItems) items packed")
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     } else {
                         Text("Tap to start your packing list")
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                 }
@@ -749,19 +778,53 @@ struct AddItemSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     let trip: Trip
+    var onFlightCreated: ((FlightSegment) -> Void)?
+    var onHotelCreated: ((HotelBooking) -> Void)?
+    var onCarCreated: ((CarRentalBooking) -> Void)?
     var onActivityCreated: ((TripActivity) -> Void)?
     var onDiningCreated: ((DiningReservation) -> Void)?
-    
+    @State private var showPasteImport = false
+    @State private var showFilePicker = false
+    @State private var icsParseResult: EmailParser.ParseResult?
+    @State private var icsFileName = ""
+    @State private var showICSResult = false
+    @State private var icsImportError: String?
+
+    /// UTTypes accepted by the calendar file picker
+    private var calendarFileTypes: [UTType] {
+        var types: [UTType] = []
+        if let ics = UTType(filenameExtension: "ics") { types.append(ics) }
+        if let mime = UTType(mimeType: "text/calendar") { types.append(mime) }
+        return types.isEmpty ? [.data] : types
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.voyagerBackground.ignoresSafeArea()
-                
+
                 VStack(spacing: VoyagerSpacing.stackMedium) {
                     Text("Add to Trip")
-                        .font(VoyagerFont.headlineMediumFallback)
+                        .font(VoyagerFont.headlineMedium)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .padding(.top, 24)
+
+                    addButton(icon: "doc.on.clipboard", title: "Paste Booking Confirmation", subtitle: "Import every flight, hotel & car from one email") {
+                        showPasteImport = true
+                    }
+
+                    addButton(icon: "calendar.badge.plus", title: "Import Calendar File", subtitle: "Exact import from an .ics \"Add to calendar\" file") {
+                        showFilePicker = true
+                    }
+
+                    if let importError = icsImportError {
+                        Text(importError)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.voyagerError)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Divider().background(Color.voyagerOutlineVariant.opacity(0.3))
                     
                     addButton(icon: "airplane.departure", title: "Flight", subtitle: "Add a flight segment") {
                         let flight = FlightSegment(
@@ -773,10 +836,12 @@ struct AddItemSheet: View {
                         )
                         flight.trip = trip
                         modelContext.insert(flight)
-                        try? modelContext.save()
                         dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            onFlightCreated?(flight)
+                        }
                     }
-                    
+
                     addButton(icon: "bed.double", title: "Accommodation", subtitle: "Add a hotel, apartment, or B&B") {
                         let hotel = HotelBooking(
                             hotelName: "",
@@ -785,10 +850,12 @@ struct AddItemSheet: View {
                         )
                         hotel.trip = trip
                         modelContext.insert(hotel)
-                        try? modelContext.save()
                         dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            onHotelCreated?(hotel)
+                        }
                     }
-                    
+
                     addButton(icon: "car", title: "Car Rental", subtitle: "Add a car rental booking") {
                         let car = CarRentalBooking(
                             company: "",
@@ -797,8 +864,10 @@ struct AddItemSheet: View {
                         )
                         car.trip = trip
                         modelContext.insert(car)
-                        try? modelContext.save()
                         dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            onCarCreated?(car)
+                        }
                     }
                     
                     addButton(icon: "fork.knife", title: "Restaurant", subtitle: "Add a dining reservation") {
@@ -807,7 +876,7 @@ struct AddItemSheet: View {
                         )
                         dining.trip = trip
                         modelContext.insert(dining)
-                        try? modelContext.save()
+                        modelContext.saveOrLog()
                         dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                             onDiningCreated?(dining)
@@ -821,7 +890,7 @@ struct AddItemSheet: View {
                         )
                         activity.trip = trip
                         modelContext.insert(activity)
-                        try? modelContext.save()
+                        modelContext.saveOrLog()
                         dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                             onActivityCreated?(activity)
@@ -840,10 +909,56 @@ struct AddItemSheet: View {
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
             }
+            .sheet(isPresented: $showPasteImport) {
+                EmailInputView(targetTrip: trip, onCommitted: { dismiss() })
+            }
+            .fileImporter(isPresented: $showFilePicker, allowedContentTypes: calendarFileTypes) { pickResult in
+                icsImportError = nil
+                switch pickResult {
+                case .success(let url):
+                    importCalendarFile(at: url)
+                case .failure(let error):
+                    icsImportError = error.localizedDescription
+                }
+            }
+            .sheet(isPresented: $showICSResult) {
+                if let result = icsParseResult {
+                    ParseResultView(
+                        result: result,
+                        onAccept: {
+                            let service = EmailIngestionService(modelContext: modelContext)
+                            service.commit(result, subject: icsFileName, body: "", sender: "", into: trip)
+                            showICSResult = false
+                            dismiss()
+                        },
+                        onDiscard: {
+                            showICSResult = false
+                        }
+                    )
+                }
+            }
         }
         .preferredColorScheme(.dark)
     }
-    
+
+    private func importCalendarFile(at url: URL) {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else {
+            icsImportError = "Could not read \(url.lastPathComponent)"
+            return
+        }
+        guard ICSParser.isCalendar(text) else {
+            icsImportError = "\(url.lastPathComponent) is not a calendar file"
+            return
+        }
+
+        icsFileName = url.lastPathComponent
+        icsParseResult = ICSParser.parse(text)
+        showICSResult = true
+    }
+
     private func addButton(icon: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 16) {
@@ -858,11 +973,11 @@ struct AddItemSheet: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(subtitle)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
                 

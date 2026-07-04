@@ -12,9 +12,6 @@ import SwiftData
 struct TravelMemoryApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Destination.self,
-            Memory.self,
-            Photo.self,
             Trip.self,
             FlightSegment.self,
             HotelBooking.self,
@@ -31,20 +28,28 @@ struct TravelMemoryApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            // Migration failed — delete old database and retry
-            // This is safe during development; old sample data will be cleared
-            print("⚠️ ModelContainer failed: \(error). Deleting old store and retrying...")
-            
+            // Migration failed. Never delete user data — move the store
+            // aside so it can be recovered, then start with a fresh one.
+            print("⚠️ ModelContainer failed: \(error). Backing up store and starting fresh...")
+
             let url = modelConfiguration.url
             let dir = url.deletingLastPathComponent()
-            
-            // Remove all SwiftData files
+            let backupDir = dir.appendingPathComponent(
+                "StoreBackup-\(Int(Date().timeIntervalSince1970))",
+                isDirectory: true
+            )
+
             if let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) {
-                for file in files where file.lastPathComponent.contains("default.store") {
-                    try? FileManager.default.removeItem(at: file)
+                try? FileManager.default.createDirectory(at: backupDir, withIntermediateDirectories: true)
+                // Moves default.store plus its -shm/-wal sidecar files
+                for file in files where file.lastPathComponent.hasPrefix("default.store") {
+                    try? FileManager.default.moveItem(
+                        at: file,
+                        to: backupDir.appendingPathComponent(file.lastPathComponent)
+                    )
                 }
             }
-            
+
             do {
                 return try ModelContainer(for: schema, configurations: [modelConfiguration])
             } catch {

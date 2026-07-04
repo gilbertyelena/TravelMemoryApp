@@ -74,6 +74,11 @@
 			path = ShareExtension;
 			sourceTree = "<group>";
 		};
+		57ABB1502FAF66120007FDE0 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		57F6B0062FA14FF400039210 /* TravelMemory */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = TravelMemory;
@@ -127,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				57F6B0062FA14FF400039210 /* TravelMemory */,
+				57ABB1502FAF66120007FDE0 /* Shared */,
 				57F6B0162FA14FF500039210 /* TravelMemoryTests */,
 				57F6B0202FA14FF500039210 /* TravelMemoryUITests */,
 				57ABB1332FAF66120007FDE0 /* ShareExtension */,
@@ -162,6 +168,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				57ABB1332FAF66120007FDE0 /* ShareExtension */,
+				57ABB1502FAF66120007FDE0 /* Shared */,
 			);
 			name = ShareExtension;
 			packageProductDependencies = (
@@ -185,6 +192,7 @@
 				57ABB13B2FAF66120007FDE0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				57ABB1502FAF66120007FDE0 /* Shared */,
 				57F6B0062FA14FF400039210 /* TravelMemory */,
 			);
 			name = TravelMemory;

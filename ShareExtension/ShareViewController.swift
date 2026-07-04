@@ -96,7 +96,7 @@ class ShareViewController: SLComposeServiceViewController {
                     }
                 }
                 
-                // Handle URLs
+                // Handle URLs (including shared .ics calendar files)
                 if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
                     provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { [weak self] item, _ in
                         if let url = item as? URL {
@@ -105,11 +105,41 @@ class ShareViewController: SLComposeServiceViewController {
                                     self?.emailSender = url.absoluteString.replacingOccurrences(of: "mailto:", with: "")
                                     self?.reloadConfigurationItems()
                                 }
+                            } else if url.isFileURL, url.pathExtension.lowercased() == "ics",
+                                      let calendarText = try? String(contentsOf: url, encoding: .utf8) {
+                                // The main app detects calendar content and
+                                // routes it to the ICS parser.
+                                DispatchQueue.main.async {
+                                    self?.emailBody = calendarText
+                                    self?.emailSubject = url.lastPathComponent
+                                    self?.reloadConfigurationItems()
+                                }
                             } else {
                                 DispatchQueue.main.async {
                                     self?.emailBody += "\n\(url.absoluteString)"
                                     self?.reloadConfigurationItems()
                                 }
+                            }
+                        }
+                    }
+                }
+
+                // Handle calendar attachments shared directly as .ics data
+                let icsTypeID = "com.apple.ical.ics"
+                if provider.hasItemConformingToTypeIdentifier(icsTypeID) {
+                    provider.loadItem(forTypeIdentifier: icsTypeID, options: nil) { [weak self] item, _ in
+                        var calendarText: String?
+                        if let url = item as? URL {
+                            calendarText = try? String(contentsOf: url, encoding: .utf8)
+                        } else if let data = item as? Data {
+                            calendarText = String(data: data, encoding: .utf8)
+                        } else if let text = item as? String {
+                            calendarText = text
+                        }
+                        if let calendarText {
+                            DispatchQueue.main.async {
+                                self?.emailBody = calendarText
+                                self?.reloadConfigurationItems()
                             }
                         }
                     }

@@ -2,8 +2,10 @@
 //  SecureVaultView.swift
 //  TravelMemory
 //
-//  Encrypted local storage for passports, visas, and boarding passes.
-//  Now features a document scanner (camera/photo capture) and document grid.
+//  Biometric/passcode-gated storage for passports, visas, and boarding
+//  passes. Documents live in the local SwiftData store and are protected
+//  by iOS data protection plus the Face ID / passcode gate below.
+//  Features a document scanner (camera/photo capture) and document grid.
 //
 
 import SwiftUI
@@ -14,21 +16,27 @@ import PhotosUI
 struct SecureVaultView: View {
     @State private var isAuthenticated = false
     @State private var authError: String?
-    
+    @State private var passcodeNotSet = false
+
     var body: some View {
         ZStack {
             Color.voyagerBackground.ignoresSafeArea()
-            
+
             if isAuthenticated {
                 VaultContentView()
             } else {
                 BiometricGateView(
-                    onAuthenticated: {
+                    authError: authError,
+                    passcodeNotSet: passcodeNotSet,
+                    onRetry: {
+                        authError = nil
+                        authenticate()
+                    },
+                    onContinueUnprotected: {
                         withAnimation(.easeOut(duration: 0.4)) {
                             isAuthenticated = true
                         }
-                    },
-                    authError: authError
+                    }
                 )
             }
         }
@@ -37,30 +45,33 @@ struct SecureVaultView: View {
             authenticate()
         }
     }
-    
+
     private func authenticate() {
         let context = LAContext()
         var error: NSError?
-        
-        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-            context.evaluatePolicy(
-                .deviceOwnerAuthenticationWithBiometrics,
-                localizedReason: "Unlock your Secure Vault"
-            ) { success, authenticationError in
-                DispatchQueue.main.async {
-                    if success {
-                        withAnimation(.easeOut(duration: 0.4)) {
-                            isAuthenticated = true
-                        }
-                    } else {
-                        authError = authenticationError?.localizedDescription
+
+        // .deviceOwnerAuthentication falls back to the device passcode
+        // when Face ID / Touch ID is unavailable or fails.
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            // No passcode set on this device — there is nothing to
+            // authenticate against. Require an explicit user choice
+            // instead of unlocking silently.
+            passcodeNotSet = true
+            authError = "This device has no passcode. Set one in Settings to protect your vault."
+            return
+        }
+
+        context.evaluatePolicy(
+            .deviceOwnerAuthentication,
+            localizedReason: "Unlock your Secure Vault"
+        ) { success, authenticationError in
+            DispatchQueue.main.async {
+                if success {
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        isAuthenticated = true
                     }
-                }
-            }
-        } else {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeOut(duration: 0.4)) {
-                    isAuthenticated = true
+                } else {
+                    authError = authenticationError?.localizedDescription ?? "Authentication failed"
                 }
             }
         }
@@ -116,10 +127,10 @@ struct VaultContentView: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Secure Vault")
-                        .font(VoyagerFont.headlineLargeFallback)
+                        .font(VoyagerFont.headlineLarge)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text("\(documents.count) document\(documents.count == 1 ? "" : "s")")
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
             }
@@ -178,7 +189,7 @@ struct VaultContentView: View {
             // Info
             VStack(alignment: .leading, spacing: 3) {
                 Text(doc.title.isEmpty ? doc.category.label : doc.title)
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.voyagerOnSurface)
                     .lineLimit(1)
@@ -224,10 +235,10 @@ struct VaultContentView: View {
             
             VStack(spacing: 8) {
                 Text("No Documents Yet")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("Scan or photograph your passports,\nvisas, and boarding passes")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
@@ -243,7 +254,7 @@ struct VaultContentView: View {
                                 .foregroundStyle(Color(hex: cat.color))
                                 .frame(width: 24)
                             Text("Add \(cat.label)")
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .foregroundStyle(Color.voyagerOnSurface)
                             Spacer()
                             Image(systemName: "camera.fill")
@@ -372,7 +383,7 @@ struct AddDocumentView: View {
                     photoItem = nil
                 } label: {
                     Text("REMOVE")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .tracking(0.6)
                         .foregroundStyle(Color.voyagerError)
                 }
@@ -383,7 +394,7 @@ struct AddDocumentView: View {
                         .foregroundStyle(Color.voyagerPrimary.opacity(0.5))
                     
                     Text("Scan or select a document photo")
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     
                     HStack(spacing: 12) {
@@ -392,7 +403,7 @@ struct AddDocumentView: View {
                                 Image(systemName: "camera.fill")
                                     .font(.system(size: 14))
                                 Text("CAMERA")
-                                    .font(VoyagerFont.labelCapsFallback)
+                                    .font(VoyagerFont.labelCaps)
                                     .tracking(0.6)
                             }
                             .foregroundStyle(.white)
@@ -407,7 +418,7 @@ struct AddDocumentView: View {
                                 Image(systemName: "photo")
                                     .font(.system(size: 14))
                                 Text("GALLERY")
-                                    .font(VoyagerFont.labelCapsFallback)
+                                    .font(VoyagerFont.labelCaps)
                                     .tracking(0.6)
                             }
                             .foregroundStyle(Color.voyagerPrimary)
@@ -440,7 +451,7 @@ struct AddDocumentView: View {
     private var categoryPicker: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("CATEGORY")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
@@ -454,7 +465,7 @@ struct AddDocumentView: View {
                                 Image(systemName: cat.icon)
                                     .font(.system(size: 12))
                                 Text(cat.label)
-                                    .font(VoyagerFont.labelCapsFallback)
+                                    .font(VoyagerFont.labelCaps)
                             }
                             .foregroundStyle(selectedCategory == cat ? .white : Color.voyagerOnSurfaceVariant)
                             .padding(.horizontal, 14)
@@ -471,11 +482,11 @@ struct AddDocumentView: View {
     private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             TextField(placeholder, text: text)
-                .font(VoyagerFont.bodyLargeFallback)
+                .font(VoyagerFont.bodyLarge)
                 .foregroundStyle(Color.voyagerOnSurface)
                 .padding(14)
                 .background(Color.voyagerInputBackground)
@@ -490,11 +501,11 @@ struct AddDocumentView: View {
     private var notesField: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("NOTES")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             TextField("Optional notes...", text: $notes, axis: .vertical)
-                .font(VoyagerFont.bodyLargeFallback)
+                .font(VoyagerFont.bodyLarge)
                 .foregroundStyle(Color.voyagerOnSurface)
                 .lineLimit(3...6)
                 .padding(14)
@@ -519,7 +530,7 @@ struct AddDocumentView: View {
             notes: notes
         )
         modelContext.insert(doc)
-        try? modelContext.save()
+        modelContext.saveOrLog()
         dismiss()
     }
     
@@ -600,25 +611,25 @@ struct DocumentDetailView: View {
                                 Image(systemName: document.category.icon)
                                     .foregroundStyle(Color(hex: document.category.color))
                                 Text(document.category.label.uppercased())
-                                    .font(VoyagerFont.labelCapsFallback)
+                                    .font(VoyagerFont.labelCaps)
                                     .tracking(0.8)
                                     .foregroundStyle(Color(hex: document.category.color))
                             }
                             
                             Text(document.title)
-                                .font(VoyagerFont.headlineMediumFallback)
+                                .font(VoyagerFont.headlineMedium)
                                 .foregroundStyle(Color.voyagerOnSurface)
                             
                             if !document.notes.isEmpty {
                                 Text(document.notes)
-                                    .font(VoyagerFont.bodySmallFallback)
+                                    .font(VoyagerFont.bodySmall)
                                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             }
                             
                             let fmt = DateFormatter()
                             let _ = fmt.dateStyle = .medium
                             Text("Added \(fmt.string(from: document.createdAt))")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant.opacity(0.6))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -629,7 +640,7 @@ struct DocumentDetailView: View {
                                 Image(systemName: "trash")
                                 Text("DELETE DOCUMENT")
                             }
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerError)
                             .frame(maxWidth: .infinity)
@@ -655,7 +666,7 @@ struct DocumentDetailView: View {
             .alert("Delete Document?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     modelContext.delete(document)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
@@ -668,8 +679,10 @@ struct DocumentDetailView: View {
 // MARK: - Biometric Gate View
 
 struct BiometricGateView: View {
-    var onAuthenticated: () -> Void
     var authError: String?
+    var passcodeNotSet: Bool
+    var onRetry: () -> Void
+    var onContinueUnprotected: () -> Void
     @State private var progress: CGFloat = 0
     @State private var scanLineOffset: CGFloat = -60
     
@@ -721,18 +734,18 @@ struct BiometricGateView: View {
                 VStack(spacing: VoyagerSpacing.stackSmall) {
                     if let error = authError {
                         Text("Authentication Failed")
-                            .font(VoyagerFont.headlineMediumFallback)
+                            .font(VoyagerFont.headlineMedium)
                             .foregroundStyle(Color.voyagerError)
                         Text(error)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             .multilineTextAlignment(.center)
                     } else {
                         Text("Authenticating...")
-                            .font(VoyagerFont.headlineMediumFallback)
+                            .font(VoyagerFont.headlineMedium)
                             .foregroundStyle(Color.voyagerOnSurface)
                         Text("Verifying biometric credentials")
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                 }
@@ -750,9 +763,16 @@ struct BiometricGateView: View {
                 }
                 .frame(width: 200, height: 4)
                 
-                if authError != nil {
-                    Button { onAuthenticated() } label: {
-                        Text("UNLOCK MANUALLY")
+                if passcodeNotSet {
+                    Button { onContinueUnprotected() } label: {
+                        Text("CONTINUE WITHOUT PROTECTION")
+                    }
+                    .buttonStyle(VoyagerPrimaryButtonStyle())
+                    .frame(width: 260)
+                    .padding(.top, 8)
+                } else if authError != nil {
+                    Button { onRetry() } label: {
+                        Text("TRY AGAIN")
                     }
                     .buttonStyle(VoyagerPrimaryButtonStyle())
                     .frame(width: 200)

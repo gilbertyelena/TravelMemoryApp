@@ -13,7 +13,13 @@ struct EditFlightView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var flight: FlightSegment
-    
+    /// True when editing a just-created draft — dismissed without saving,
+    /// the draft is deleted again so no empty rows linger in the timeline.
+    var isNew: Bool = false
+    /// Called with the pre-filled return segment after "Save & Add Return".
+    var onSaveAndAddReturn: ((FlightSegment) -> Void)? = nil
+
+    @State private var isFinalized = false
     @State private var airline: String = ""
     @State private var flightNumber: String = ""
     @State private var departureAirport: String = ""
@@ -47,8 +53,8 @@ struct EditFlightView: View {
                     VStack(spacing: VoyagerSpacing.stackLarge) {
                         // Airline & Flight
                         HStack(spacing: 12) {
-                            formField(title: "AIRLINE", placeholder: "Lufthansa", text: $airline)
-                            formField(title: "FLIGHT #", placeholder: "LH411", text: $flightNumber)
+                            VoyagerFormField(title: "AIRLINE", placeholder: "Lufthansa", text: $airline)
+                            VoyagerFormField(title: "FLIGHT #", placeholder: "LH411", text: $flightNumber)
                         }
                         
                         // Departure search
@@ -88,38 +94,58 @@ struct EditFlightView: View {
                         )
                         
                         // Times
-                        dateField(title: "DEPARTURE", date: $departureTime)
-                        dateField(title: "ARRIVAL", date: $arrivalTime)
+                        VoyagerDateField(title: "DEPARTURE", date: $departureTime)
+                        VoyagerDateField(title: "ARRIVAL", date: $arrivalTime)
                         
                         // Details
                         HStack(spacing: 12) {
-                            formField(title: "GATE", placeholder: "D4", text: $gate)
-                            formField(title: "SEAT", placeholder: "14A", text: $seat)
-                            formField(title: "TERMINAL", placeholder: "1", text: $terminal)
+                            VoyagerFormField(title: "GATE", placeholder: "D4", text: $gate)
+                            VoyagerFormField(title: "SEAT", placeholder: "14A", text: $seat)
+                            VoyagerFormField(title: "TERMINAL", placeholder: "1", text: $terminal)
                         }
                         
-                        formField(title: "CONFIRMATION CODE", placeholder: "ABCX7K", text: $confirmationCode)
+                        VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "ABCX7K", text: $confirmationCode)
                         
                         Button { save() } label: { Text("SAVE") }
                             .buttonStyle(VoyagerPrimaryButtonStyle())
                             .padding(.top, 8)
-                        
-                        Button(role: .destructive) {
-                            showDeleteConfirm = true
-                        } label: {
-                            Text("DELETE FLIGHT")
-                                .font(VoyagerFont.labelCapsFallback)
+
+                        // Round trips are the common case — offer to
+                        // create the reverse leg in one tap.
+                        if onSaveAndAddReturn != nil && !departureAirport.isEmpty && !arrivalAirport.isEmpty {
+                            Button { saveAndAddReturn() } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.uturn.left")
+                                    Text("SAVE & ADD RETURN FLIGHT")
+                                }
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
-                                .foregroundStyle(Color.voyagerError)
+                                .foregroundStyle(Color.voyagerPrimary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
+                                .background(Color.voyagerPrimary.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+                            }
+                        }
+
+                        if !isNew {
+                            Button(role: .destructive) {
+                                showDeleteConfirm = true
+                            } label: {
+                                Text("DELETE FLIGHT")
+                                    .font(VoyagerFont.labelCaps)
+                                    .tracking(0.6)
+                                    .foregroundStyle(Color.voyagerError)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                            }
                         }
                     }
                     .padding(.horizontal, VoyagerSpacing.marginMain)
                     .padding(.vertical, 16)
                 }
             }
-            .navigationTitle("Edit Flight")
+            .navigationTitle(isNew ? "Add Flight" : "Edit Flight")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -130,8 +156,9 @@ struct EditFlightView: View {
             }
             .alert("Delete Flight?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
+                    isFinalized = true
                     modelContext.delete(flight)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
@@ -139,6 +166,13 @@ struct EditFlightView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear { loadValues() }
+        .onDisappear {
+            // Draft dismissed without saving — remove it again
+            if isNew && !isFinalized {
+                modelContext.delete(flight)
+                modelContext.saveOrLog()
+            }
+        }
     }
     
     // MARK: - Airport Search Field
@@ -155,7 +189,7 @@ struct EditFlightView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
@@ -167,7 +201,7 @@ struct EditFlightView: View {
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.voyagerPrimary)
                         Text(cityName)
-                            .font(VoyagerFont.bodyLargeFallback)
+                            .font(VoyagerFont.bodyLarge)
                             .foregroundStyle(Color.voyagerOnSurface)
                     }
                     
@@ -203,16 +237,21 @@ struct EditFlightView: View {
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     
                     TextField("Search city or airport code...", text: query)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .focused(isFocused)
                         .onChange(of: query.wrappedValue) { _, newValue in
-                            let matches = AirportDatabase.search(newValue)
+                            let matches = airportSuggestions(for: newValue)
                             results.wrappedValue = matches
                             showResults.wrappedValue = !matches.isEmpty
                         }
                         .onChange(of: isFocused.wrappedValue) { _, focused in
-                            if !focused {
+                            if focused {
+                                // Show recent picks before the user types
+                                let matches = airportSuggestions(for: query.wrappedValue)
+                                results.wrappedValue = matches
+                                showResults.wrappedValue = !matches.isEmpty
+                            } else {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                     showResults.wrappedValue = false
                                 }
@@ -232,11 +271,12 @@ struct EditFlightView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(results.wrappedValue.enumerated()), id: \.offset) { index, airport in
                             SearchSuggestionRow(
-                                icon: "airplane.circle.fill",
+                                icon: query.wrappedValue.isEmpty ? "clock.arrow.circlepath" : "airplane.circle.fill",
                                 iconColor: Color.voyagerPrimary,
                                 title: "\(airport.code) — \(airport.city)",
                                 subtitle: airport.name
                             ) {
+                                AirportDatabase.recordRecent(code: airport.code)
                                 onSelect(airport.code, airport.city)
                             }
                             
@@ -257,8 +297,14 @@ struct EditFlightView: View {
         }
     }
     
+    /// Ranked matches for a query; recent picks when the query is empty.
+    private func airportSuggestions(for query: String) -> [(code: String, city: String, name: String)] {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        return trimmed.isEmpty ? AirportDatabase.recents() : AirportDatabase.search(trimmed)
+    }
+
     // MARK: - Load / Save
-    
+
     private func loadValues() {
         airline = flight.airline
         flightNumber = flight.flightNumber
@@ -274,7 +320,7 @@ struct EditFlightView: View {
         confirmationCode = flight.confirmationCode
     }
     
-    private func save() {
+    private func applyChanges() {
         flight.airline = airline
         flight.flightNumber = flightNumber
         flight.departureAirport = departureAirport.uppercased()
@@ -287,44 +333,46 @@ struct EditFlightView: View {
         flight.seat = seat
         flight.terminal = terminal
         flight.confirmationCode = confirmationCode.uppercased()
-        try? modelContext.save()
+        modelContext.saveOrLog()
+        isFinalized = true
+    }
+
+    private func save() {
+        applyChanges()
         dismiss()
     }
-    
-    // MARK: - Form Helpers
-    
-    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            TextField(placeholder, text: text)
-                .font(VoyagerFont.bodyLargeFallback)
-                .foregroundStyle(Color.voyagerOnSurface)
-                .padding(14)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
-                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
-                )
+
+    /// Saves the current flight, then hands a pre-filled reverse leg
+    /// back to the presenter to edit.
+    private func saveAndAddReturn() {
+        applyChanges()
+
+        let flightDuration = arrivalTime.timeIntervalSince(departureTime)
+        // Best guess for the return date: the trip's end date if it lies
+        // after this leg's arrival, otherwise later the same day.
+        let returnDeparture: Date
+        if let tripEnd = flight.trip?.endDate, tripEnd > arrivalTime {
+            returnDeparture = tripEnd
+        } else {
+            returnDeparture = arrivalTime.addingTimeInterval(4 * 3600)
         }
-    }
-    
-    private func dateField(title: String, date: Binding<Date>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            DatePicker("", selection: date)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .tint(Color.voyagerPrimary)
-                .padding(10)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-        }
+
+        let returnFlight = FlightSegment(
+            airline: airline,
+            flightNumber: "",
+            departureAirport: arrivalAirport.uppercased(),
+            departureCity: arrivalCity,
+            arrivalAirport: departureAirport.uppercased(),
+            arrivalCity: departureCity,
+            departureTime: returnDeparture,
+            arrivalTime: returnDeparture.addingTimeInterval(max(flightDuration, 0)),
+            confirmationCode: confirmationCode.uppercased()
+        )
+        returnFlight.trip = flight.trip
+        modelContext.insert(returnFlight)
+        modelContext.saveOrLog()
+
+        dismiss()
+        onSaveAndAddReturn?(returnFlight)
     }
 }

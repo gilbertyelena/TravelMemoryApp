@@ -54,7 +54,7 @@ struct InboxReviewView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .medium))
                         Text("Back")
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                     }
                     .foregroundStyle(Color.voyagerPrimary)
                 }
@@ -65,10 +65,10 @@ struct InboxReviewView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text("Action Needed")
-                    .font(VoyagerFont.headlineLargeFallback)
+                    .font(VoyagerFont.headlineLarge)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("Review low-confidence data parses to ensure a seamless trip.")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
             .padding(.horizontal, VoyagerSpacing.marginMain)
@@ -90,10 +90,10 @@ struct InboxReviewView: View {
             
             VStack(spacing: 6) {
                 Text("All Clear")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("No items need your attention right now")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
         }
@@ -109,12 +109,12 @@ struct InboxReviewView: View {
                 Image(systemName: "envelope.open")
                     .foregroundStyle(Color.voyagerTertiary)
                 Text("EMAIL PARSE")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(1.2)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 Spacer()
                 Text("\(Int(email.overallConfidence * 100))%")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .foregroundStyle(email.overallConfidence >= 0.5 ? Color.voyagerTertiary : Color.voyagerError)
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background((email.overallConfidence >= 0.5 ? Color.voyagerTertiary : Color.voyagerError).opacity(0.15))
@@ -122,7 +122,7 @@ struct InboxReviewView: View {
             }
             
             Text(email.subject)
-                .font(VoyagerFont.headlineMediumFallback)
+                .font(VoyagerFont.headlineMedium)
                 .foregroundStyle(Color.voyagerOnSurface)
             
             if !email.issues.isEmpty {
@@ -144,7 +144,7 @@ struct InboxReviewView: View {
             HStack(spacing: 12) {
                 Button {
                     email.status = .accepted
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                 } label: {
                     Text("ACCEPT")
                 }
@@ -152,10 +152,10 @@ struct InboxReviewView: View {
                 
                 Button {
                     email.status = .rejected
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                 } label: {
                     Text("DISMISS")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .tracking(0.6)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                         .frame(maxWidth: .infinity)

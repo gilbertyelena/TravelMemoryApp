@@ -11,34 +11,73 @@ import MapKit
 
 // MARK: - Place Search Manager
 
+/// Debounced MapKit place search. Optionally biased to a region
+/// (restaurant search near the stay) and restricted to points of interest.
 @MainActor
 class PlaceSearchManager: ObservableObject {
     @Published var results: [MKMapItem] = []
     @Published var isSearching = false
-    
+
+    /// When set, searches are biased to this region and results farther
+    /// than ~50 km from its center are dropped.
+    var searchRegion: MKCoordinateRegion?
+    var pointOfInterestOnly: Bool
+    var resultLimit: Int
+    /// When set, results are restricted to these POI categories
+    /// (e.g. restaurants only, so a name search doesn't return streets).
+    var pointOfInterestCategories: [MKPointOfInterestCategory]?
+
     private var searchTask: Task<Void, Never>?
-    
-    func search(query: String, types: [String] = []) {
+    private static let maxDistanceFromRegionCenter: CLLocationDistance = 50_000
+
+    init(
+        pointOfInterestOnly: Bool = false,
+        resultLimit: Int = 5,
+        pointOfInterestCategories: [MKPointOfInterestCategory]? = nil
+    ) {
+        self.pointOfInterestOnly = pointOfInterestOnly
+        self.resultLimit = resultLimit
+        self.pointOfInterestCategories = pointOfInterestCategories
+    }
+
+    /// Distance from the current search region's center, for display.
+    func distance(to item: MKMapItem) -> CLLocationDistance? {
+        guard let region = searchRegion else { return nil }
+        let center = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude)
+        let coordinate = item.placemark.coordinate
+        return center.distance(from: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude))
+    }
+
+    func search(query: String) {
         searchTask?.cancel()
-        
-        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
             results = []
             return
         }
-        
+
         isSearching = true
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 300_000_000) // 300ms debounce
             guard !Task.isCancelled else { return }
-            
+
             let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = query
-            
-            let search = MKLocalSearch(request: request)
+            request.naturalLanguageQuery = trimmed
+            if pointOfInterestOnly {
+                request.resultTypes = .pointOfInterest
+            }
+            if let categories = pointOfInterestCategories {
+                request.pointOfInterestFilter = MKPointOfInterestFilter(including: categories)
+            }
+            if let region = searchRegion {
+                request.region = region
+            }
+
             do {
-                let response = try await search.start()
+                let response = try await MKLocalSearch(request: request).start()
                 if !Task.isCancelled {
-                    self.results = Array(response.mapItems.prefix(5))
+                    self.results = Array(sortedByDistance(filteredToRegion(response.mapItems)).prefix(resultLimit))
                 }
             } catch {
                 if !Task.isCancelled {
@@ -48,10 +87,55 @@ class PlaceSearchManager: ObservableObject {
             self.isSearching = false
         }
     }
-    
+
+    /// Immediately search a map region for a category or free-text query,
+    /// returning all results. Used by the map browser's "search this area".
+    func searchArea(region: MKCoordinateRegion, query: String) {
+        searchTask?.cancel()
+        isSearching = true
+
+        searchTask = Task {
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = query
+            request.resultTypes = .pointOfInterest
+            if let categories = pointOfInterestCategories {
+                request.pointOfInterestFilter = MKPointOfInterestFilter(including: categories)
+            }
+            request.region = region
+
+            do {
+                let response = try await MKLocalSearch(request: request).start()
+                if !Task.isCancelled {
+                    self.results = response.mapItems
+                }
+            } catch {
+                if !Task.isCancelled {
+                    self.results = []
+                }
+            }
+            self.isSearching = false
+        }
+    }
+
     func clear() {
         searchTask?.cancel()
         results = []
+    }
+
+    private func filteredToRegion(_ items: [MKMapItem]) -> [MKMapItem] {
+        guard let region = searchRegion else { return items }
+        let center = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude)
+        return items.filter { item in
+            let coordinate = item.placemark.coordinate
+            let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            return center.distance(from: location) < Self.maxDistanceFromRegionCenter
+        }
+    }
+
+    /// Nearest results first when a search region is set.
+    private func sortedByDistance(_ items: [MKMapItem]) -> [MKMapItem] {
+        guard searchRegion != nil else { return items }
+        return items.sorted { (distance(to: $0) ?? .infinity) < (distance(to: $1) ?? .infinity) }
     }
 }
 
@@ -74,7 +158,7 @@ struct SearchSuggestionRow: View {
                 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .lineLimit(1)
@@ -121,27 +205,69 @@ struct SearchResultsDropdown<Content: View>: View {
 // MARK: - Common Airport Codes (offline database)
 
 struct AirportDatabase {
+    typealias Airport = (code: String, city: String, name: String)
+
     /// Search airports by IATA code, city name, or airport name.
-    /// Exact code matches are prioritized first.
-    static func search(_ query: String) -> [(code: String, city: String, name: String)] {
-        let q = query.lowercased().trimmingCharacters(in: .whitespaces)
+    /// Diacritic-insensitive ("munchen" finds Munich) and ranked:
+    /// exact code > code prefix > city prefix > name prefix > contains.
+    static func search(_ query: String) -> [Airport] {
+        let q = normalize(query)
         guard !q.isEmpty else { return [] }
-        
-        // Exact code match first
-        var exactMatches: [(code: String, city: String, name: String)] = []
-        var partialMatches: [(code: String, city: String, name: String)] = []
-        
+
+        var ranked: [(rank: Int, airport: Airport)] = []
+
         for airport in expanded {
-            if airport.code.lowercased() == q {
-                exactMatches.append(airport)
-            } else if airport.code.lowercased().contains(q) ||
-                      airport.city.lowercased().contains(q) ||
-                      airport.name.lowercased().contains(q) {
-                partialMatches.append(airport)
+            let code = normalize(airport.code)
+            let city = normalize(airport.city)
+            let name = normalize(airport.name)
+
+            let rank: Int
+            if code == q {
+                rank = 0
+            } else if code.hasPrefix(q) {
+                rank = 1
+            } else if city.hasPrefix(q) {
+                rank = 2
+            } else if name.hasPrefix(q) {
+                rank = 3
+            } else if city.contains(q) || name.contains(q) {
+                rank = 4
+            } else {
+                continue
             }
+            ranked.append((rank, airport))
         }
-        
-        return Array((exactMatches + partialMatches).prefix(8))
+
+        return ranked
+            .sorted { $0.rank < $1.rank }
+            .prefix(8)
+            .map(\.airport)
+    }
+
+    private static func normalize(_ text: String) -> String {
+        text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    // MARK: Recently used airports
+
+    private static let recentsKey = "recentAirportCodes"
+    private static let maxRecents = 5
+
+    /// Airports the user picked recently — shown before typing.
+    static func recents() -> [Airport] {
+        let codes = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
+        return codes.compactMap { code in
+            expanded.first { $0.code == code }
+        }
+    }
+
+    /// Record a picked airport so it surfaces at the top next time.
+    static func recordRecent(code: String) {
+        var codes = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
+        codes.removeAll { $0 == code }
+        codes.insert(code, at: 0)
+        UserDefaults.standard.set(Array(codes.prefix(maxRecents)), forKey: recentsKey)
     }
 }
 

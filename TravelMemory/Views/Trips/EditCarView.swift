@@ -12,6 +12,10 @@ struct EditCarView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var car: CarRentalBooking
+    /// True when editing a just-created draft — dismissed without saving,
+    /// the draft is deleted again so no empty rows linger in the timeline.
+    var isNew: Bool = false
+    @State private var isFinalized = false
     
     @State private var company: String = ""
     @State private var vehicleType: String = ""
@@ -30,27 +34,27 @@ struct EditCarView: View {
                 
                 ScrollView {
                     VStack(spacing: VoyagerSpacing.stackLarge) {
-                        formField(title: "COMPANY", placeholder: "Sixt", text: $company)
-                        formField(title: "VEHICLE TYPE", placeholder: "BMW 5 Series", text: $vehicleType)
+                        VoyagerFormField(title: "COMPANY", placeholder: "Sixt", text: $company)
+                        VoyagerFormField(title: "VEHICLE TYPE", placeholder: "BMW 5 Series", text: $vehicleType)
                         
-                        dateField(title: "PICKUP", date: $pickupTime)
-                        formField(title: "PICKUP LOCATION", placeholder: "Airport Terminal 2", text: $pickupLocation)
+                        VoyagerDateField(title: "PICKUP", date: $pickupTime)
+                        VoyagerFormField(title: "PICKUP LOCATION", placeholder: "Airport Terminal 2", text: $pickupLocation)
                         
-                        dateField(title: "DROP-OFF", date: $dropoffTime)
-                        formField(title: "DROP-OFF LOCATION", placeholder: "Airport Terminal 2", text: $dropoffLocation)
+                        VoyagerDateField(title: "DROP-OFF", date: $dropoffTime)
+                        VoyagerFormField(title: "DROP-OFF LOCATION", placeholder: "Airport Terminal 2", text: $dropoffLocation)
                         
-                        formField(title: "CONFIRMATION CODE", placeholder: "SX884920", text: $confirmationCode)
+                        VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "SX884920", text: $confirmationCode)
                         
                         // Pre-paid toggle
                         VStack(alignment: .leading, spacing: 6) {
                             Text("PAYMENT")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(1.0)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             
                             Toggle(isOn: $isPrepaid) {
                                 Text("Pre-paid")
-                                    .font(VoyagerFont.bodyLargeFallback)
+                                    .font(VoyagerFont.bodyLarge)
                                     .foregroundStyle(Color.voyagerOnSurface)
                             }
                             .tint(Color.voyagerPrimary)
@@ -67,7 +71,7 @@ struct EditCarView: View {
                             showDeleteConfirm = true
                         } label: {
                             Text("DELETE CAR RENTAL")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
                                 .foregroundStyle(Color.voyagerError)
                                 .frame(maxWidth: .infinity)
@@ -78,7 +82,7 @@ struct EditCarView: View {
                     .padding(.vertical, 16)
                 }
             }
-            .navigationTitle("Edit Car Rental")
+            .navigationTitle(isNew ? "Add Car Rental" : "Edit Car Rental")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -89,8 +93,9 @@ struct EditCarView: View {
             }
             .alert("Delete Car Rental?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
+                    isFinalized = true
                     modelContext.delete(car)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
@@ -98,6 +103,13 @@ struct EditCarView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear { loadValues() }
+        .onDisappear {
+            // Draft dismissed without saving — remove it again
+            if isNew && !isFinalized {
+                modelContext.delete(car)
+                modelContext.saveOrLog()
+            }
+        }
     }
     
     private func loadValues() {
@@ -112,6 +124,7 @@ struct EditCarView: View {
     }
     
     private func save() {
+        isFinalized = true
         car.company = company
         car.vehicleType = vehicleType
         car.pickupTime = pickupTime
@@ -120,42 +133,9 @@ struct EditCarView: View {
         car.dropoffLocation = dropoffLocation
         car.confirmationCode = confirmationCode.uppercased()
         car.isPrepaid = isPrepaid
-        try? modelContext.save()
+        modelContext.saveOrLog()
         dismiss()
     }
     
-    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            TextField(placeholder, text: text)
-                .font(VoyagerFont.bodyLargeFallback)
-                .foregroundStyle(Color.voyagerOnSurface)
-                .padding(14)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
-                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
-                )
-        }
-    }
     
-    private func dateField(title: String, date: Binding<Date>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            DatePicker("", selection: date)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .tint(Color.voyagerPrimary)
-                .padding(10)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-        }
-    }
 }

@@ -14,6 +14,10 @@ struct EditHotelView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var hotel: HotelBooking
+    /// True when editing a just-created draft — dismissed without saving,
+    /// the draft is deleted again so no empty rows linger in the timeline.
+    var isNew: Bool = false
+    @State private var isFinalized = false
     
     @State private var hotelName = ""
     @State private var address = ""
@@ -47,10 +51,10 @@ struct EditHotelView: View {
                             selectedCard
                         }
                         
-                        formField(title: "ROOM TYPE", placeholder: "Deluxe King", text: $roomType)
-                        dateField(title: "CHECK-IN", date: $checkInDate)
-                        dateField(title: "CHECK-OUT", date: $checkOutDate)
-                        formField(title: "CONFIRMATION CODE", placeholder: "KMP884920", text: $confirmationCode)
+                        VoyagerFormField(title: "ROOM TYPE", placeholder: "Deluxe King", text: $roomType)
+                        VoyagerDateField(title: "CHECK-IN", date: $checkInDate, displayedComponents: .date)
+                        VoyagerDateField(title: "CHECK-OUT", date: $checkOutDate, displayedComponents: .date)
+                        VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "KMP884920", text: $confirmationCode)
                         
                         Button { save() } label: { Text("SAVE") }
                             .buttonStyle(VoyagerPrimaryButtonStyle())
@@ -58,7 +62,7 @@ struct EditHotelView: View {
                         
                         Button(role: .destructive) { showDeleteConfirm = true } label: {
                             Text("DELETE ACCOMMODATION")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
                                 .foregroundStyle(Color.voyagerError)
                                 .frame(maxWidth: .infinity)
@@ -70,7 +74,7 @@ struct EditHotelView: View {
                     .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Edit Accommodation")
+            .navigationTitle(isNew ? "Add Accommodation" : "Edit Accommodation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -81,8 +85,9 @@ struct EditHotelView: View {
             }
             .alert("Delete Accommodation?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
+                    isFinalized = true
                     modelContext.delete(hotel)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
@@ -90,6 +95,13 @@ struct EditHotelView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear { loadValues() }
+        .onDisappear {
+            // Draft dismissed without saving — remove it again
+            if isNew && !isFinalized {
+                modelContext.delete(hotel)
+                modelContext.saveOrLog()
+            }
+        }
     }
     
     // MARK: - Search Section
@@ -99,11 +111,11 @@ struct EditHotelView: View {
             // City field
             VStack(alignment: .leading, spacing: 6) {
                 Text("CITY / AREA")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(1.0)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 TextField("e.g. Munich, London, Paris...", text: $searchCity)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .foregroundStyle(Color.voyagerOnSurface)
                     .padding(14)
                     .background(Color.voyagerInputBackground)
@@ -117,7 +129,7 @@ struct EditHotelView: View {
             // Name search field
             VStack(alignment: .leading, spacing: 6) {
                 Text("ACCOMMODATION NAME")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(1.0)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 
@@ -126,7 +138,7 @@ struct EditHotelView: View {
                         .font(.system(size: 14))
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     TextField("Search hotel, apartment, B&B...", text: $searchName)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .focused($nameFocused)
                         .onChange(of: searchName) { _, newValue in
@@ -168,7 +180,7 @@ struct EditHotelView: View {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 12))
                         Text("SEARCH")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.4)
                     }
                     .foregroundStyle(.white)
@@ -211,7 +223,7 @@ struct EditHotelView: View {
                                     .frame(width: 24)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(name)
-                                        .font(VoyagerFont.bodySmallFallback)
+                                        .font(VoyagerFont.bodySmall)
                                         .fontWeight(.medium)
                                         .foregroundStyle(Color.voyagerOnSurface)
                                         .lineLimit(1)
@@ -245,7 +257,7 @@ struct EditHotelView: View {
             if showResults && searcher.results.isEmpty && !searcher.isSearching && searchName.count >= 2 {
                 VStack(spacing: 10) {
                     Text("No results found")
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     Button {
                         isManualEntry = true
@@ -257,7 +269,7 @@ struct EditHotelView: View {
                             Image(systemName: "pencil")
                                 .font(.system(size: 12))
                             Text("ENTER MANUALLY")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.4)
                         }
                         .foregroundStyle(Color.voyagerPrimary)
@@ -274,7 +286,7 @@ struct EditHotelView: View {
             
             // Manual address entry
             if isManualEntry {
-                formField(title: "ADDRESS (MANUAL)", placeholder: "Enter full address", text: $address)
+                VoyagerFormField(title: "ADDRESS (MANUAL)", placeholder: "Enter full address", text: $address)
             }
         }
     }
@@ -286,12 +298,12 @@ struct EditHotelView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(hotelName)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     if !address.isEmpty {
                         Text(address)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             .lineLimit(2)
                     }
@@ -319,7 +331,7 @@ struct EditHotelView: View {
                         Image(systemName: "map.fill")
                             .font(.system(size: 13))
                         Text("OPEN IN MAPS")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.4)
                     }
                     .foregroundStyle(Color.voyagerPrimary)
@@ -381,50 +393,18 @@ struct EditHotelView: View {
     }
     
     private func save() {
+        isFinalized = true
         hotel.hotelName = hotelName
         hotel.address = address
         hotel.checkInDate = checkInDate
         hotel.checkOutDate = checkOutDate
         hotel.confirmationCode = confirmationCode.uppercased()
         hotel.roomType = roomType
-        try? modelContext.save()
+        modelContext.saveOrLog()
         dismiss()
     }
     
-    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            TextField(placeholder, text: text)
-                .font(VoyagerFont.bodyLargeFallback)
-                .foregroundStyle(Color.voyagerOnSurface)
-                .padding(14)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
-                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
-                )
-        }
-    }
     
-    private func dateField(title: String, date: Binding<Date>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            DatePicker("", selection: date, displayedComponents: .date)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .tint(Color.voyagerPrimary)
-                .padding(10)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-        }
-    }
 }
 
 // MARK: - Accommodation Searcher (MapKit)
@@ -479,7 +459,7 @@ struct PasteBookingSheet: View {
                 Color.voyagerBackground.ignoresSafeArea()
                 VStack(spacing: VoyagerSpacing.stackLarge) {
                     Text("Paste booking confirmation text below to extract details.")
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     
                     Button {
@@ -489,7 +469,7 @@ struct PasteBookingSheet: View {
                             Image(systemName: "doc.on.clipboard")
                             Text("PASTE FROM CLIPBOARD")
                         }
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .tracking(0.6)
                         .foregroundStyle(Color.voyagerPrimary)
                         .frame(maxWidth: .infinity)
@@ -499,7 +479,7 @@ struct PasteBookingSheet: View {
                     }
                     
                     TextEditor(text: $pastedText)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .scrollContentBackground(.hidden)
                         .padding(12)

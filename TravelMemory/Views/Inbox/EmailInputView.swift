@@ -13,14 +13,19 @@ import SwiftData
 struct EmailInputView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    
+
+    /// When set, imported items go straight into this trip instead of
+    /// matching/creating one by date.
+    var targetTrip: Trip? = nil
+    /// Called after a successful commit (e.g. so a presenting sheet can close too).
+    var onCommitted: (() -> Void)? = nil
+
     @State private var subject = ""
     @State private var sender = ""
     @State private var emailBody = ""
     @State private var isProcessing = false
     @State private var parseResult: EmailParser.ParseResult?
     @State private var showingResult = false
-    @State private var createdTrip: Trip?
     
     var body: some View {
         NavigationStack {
@@ -37,10 +42,10 @@ struct EmailInputView: View {
                             
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Paste Confirmation Email")
-                                    .font(VoyagerFont.headlineMediumFallback)
+                                    .font(VoyagerFont.headlineMedium)
                                     .foregroundStyle(Color.voyagerOnSurface)
                                 Text("Forward your booking email or paste the content below")
-                                    .font(VoyagerFont.bodySmallFallback)
+                                    .font(VoyagerFont.bodySmall)
                                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             }
                         }
@@ -54,12 +59,12 @@ struct EmailInputView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("EMAIL BODY")
-                                    .font(VoyagerFont.labelCapsFallback)
+                                    .font(VoyagerFont.labelCaps)
                                     .tracking(1.0)
                                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                                 
                                 TextEditor(text: $emailBody)
-                                    .font(VoyagerFont.bodySmallFallback)
+                                    .font(VoyagerFont.bodySmall)
                                     .foregroundStyle(Color.voyagerOnSurface)
                                     .scrollContentBackground(.hidden)
                                     .padding(12)
@@ -81,7 +86,7 @@ struct EmailInputView: View {
                                 Image(systemName: "doc.text")
                                 Text("LOAD SAMPLE EMAIL")
                             }
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerPrimary)
                             .frame(maxWidth: .infinity)
@@ -129,14 +134,15 @@ struct EmailInputView: View {
                 if let result = parseResult {
                     ParseResultView(
                         result: result,
-                        trip: createdTrip,
-                        onAccept: { dismiss() },
+                        onAccept: {
+                            // Nothing was persisted during parsing —
+                            // commit only on explicit accept.
+                            let service = EmailIngestionService(modelContext: modelContext)
+                            service.commit(result, subject: subject, body: emailBody, sender: sender, into: targetTrip)
+                            dismiss()
+                            onCommitted?()
+                        },
                         onDiscard: {
-                            // Delete created trip if user discards
-                            if let trip = createdTrip {
-                                modelContext.delete(trip)
-                                try? modelContext.save()
-                            }
                             showingResult = false
                         }
                     )
@@ -149,12 +155,12 @@ struct EmailInputView: View {
     private func inputField(title: String, placeholder: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
             TextField(placeholder, text: text)
-                .font(VoyagerFont.bodySmallFallback)
+                .font(VoyagerFont.bodySmall)
                 .foregroundStyle(Color.voyagerOnSurface)
                 .padding(12)
                 .background(Color.voyagerInputBackground)
@@ -168,13 +174,10 @@ struct EmailInputView: View {
     
     private func parseEmail() {
         isProcessing = true
-        
+
         Task {
-            let service = EmailIngestionService(modelContext: modelContext)
-            let trip = await service.ingestEmail(subject: subject, body: emailBody, sender: sender)
-            
-            self.parseResult = service.lastParseResult
-            self.createdTrip = trip
+            let result = EmailIngestionService.parse(subject: subject, body: emailBody, sender: sender)
+            self.parseResult = result
             self.isProcessing = false
             self.showingResult = true
         }
@@ -222,7 +225,6 @@ struct EmailInputView: View {
 
 struct ParseResultView: View {
     let result: EmailParser.ParseResult
-    let trip: Trip?
     var onAccept: () -> Void
     var onDiscard: () -> Void
     
@@ -257,7 +259,21 @@ struct ParseResultView: View {
                                 carResultCard(car)
                             }
                         }
-                        
+
+                        if !result.dining.isEmpty {
+                            sectionHeader("Dining", icon: "fork.knife")
+                            ForEach(Array(result.dining.enumerated()), id: \.offset) { _, dining in
+                                diningResultCard(dining)
+                            }
+                        }
+
+                        if !result.activities.isEmpty {
+                            sectionHeader("Activities", icon: "figure.hiking")
+                            ForEach(Array(result.activities.enumerated()), id: \.offset) { _, activity in
+                                activityResultCard(activity)
+                            }
+                        }
+
                         // Issues
                         if !result.issues.isEmpty {
                             sectionHeader("Issues", icon: "exclamationmark.triangle")
@@ -266,7 +282,7 @@ struct ParseResultView: View {
                                     Image(systemName: "exclamationmark.circle")
                                         .foregroundStyle(Color.voyagerTertiary)
                                     Text(issue)
-                                        .font(VoyagerFont.bodySmallFallback)
+                                        .font(VoyagerFont.bodySmall)
                                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                                 }
                                 .padding(12)
@@ -285,7 +301,7 @@ struct ParseResultView: View {
                             
                             Button(action: onDiscard) {
                                 Text("DISCARD")
-                                    .font(VoyagerFont.labelCapsFallback)
+                                    .font(VoyagerFont.labelCaps)
                                     .tracking(0.6)
                                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                                     .frame(maxWidth: .infinity)
@@ -324,12 +340,12 @@ struct ParseResultView: View {
                     .rotationEffect(.degrees(-90))
                 
                 Text("\(Int(result.overallConfidence * 100))%")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(confidenceColor)
             }
             
             Text(confidenceLabel)
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(0.8)
                 .foregroundStyle(confidenceColor)
         }
@@ -356,7 +372,7 @@ struct ParseResultView: View {
                 .font(.system(size: 14))
                 .foregroundStyle(Color.voyagerPrimary)
             Text(title.uppercased())
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.2)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             Spacer()
@@ -370,7 +386,7 @@ struct ParseResultView: View {
         VStack(spacing: 12) {
             HStack {
                 Text(flight.airline.isEmpty && flight.flightNumber.isEmpty ? "Unknown Flight" : "\(flight.airline) \(flight.flightNumber)")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(0.6)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 Spacer()
@@ -380,9 +396,9 @@ struct ParseResultView: View {
             HStack {
                 VStack(alignment: .leading) {
                     Text(flight.departureAirport.isEmpty ? "—" : flight.departureAirport)
-                        .font(VoyagerFont.headlineMediumFallback)
+                        .font(VoyagerFont.headlineMedium)
                     Text(flight.departureCity)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
                 
@@ -393,9 +409,9 @@ struct ParseResultView: View {
                 
                 VStack(alignment: .trailing) {
                     Text(flight.arrivalAirport.isEmpty ? "—" : flight.arrivalAirport)
-                        .font(VoyagerFont.headlineMediumFallback)
+                        .font(VoyagerFont.headlineMedium)
                     Text(flight.arrivalCity)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
             }
@@ -404,7 +420,7 @@ struct ParseResultView: View {
             if !flight.confirmationCode.isEmpty {
                 HStack {
                     Text("Ref: \(flight.confirmationCode)")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .foregroundStyle(Color.voyagerPrimary)
                     Spacer()
                 }
@@ -423,7 +439,7 @@ struct ParseResultView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(hotel.hotelName.isEmpty ? "Unknown Hotel" : hotel.hotelName)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Spacer()
@@ -438,13 +454,13 @@ struct ParseResultView: View {
                         .font(.system(size: 12))
                     Text("Check-in: \(fmt.string(from: checkIn))")
                 }
-                .font(VoyagerFont.bodySmallFallback)
+                .font(VoyagerFont.bodySmall)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
             
             if !hotel.confirmationCode.isEmpty {
                 Text("Ref: \(hotel.confirmationCode)")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .foregroundStyle(Color.voyagerPrimary)
             }
         }
@@ -461,7 +477,7 @@ struct ParseResultView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(car.company.isEmpty ? "Car Rental" : car.company)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Spacer()
@@ -470,13 +486,13 @@ struct ParseResultView: View {
             
             if !car.vehicleType.isEmpty {
                 Text(car.vehicleType)
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
             
             if car.isPrepaid {
                 Text("PRE-PAID")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(0.4)
                     .foregroundStyle(Color.voyagerTertiary)
                     .padding(.horizontal, 8)
@@ -494,9 +510,89 @@ struct ParseResultView: View {
         )
     }
     
+    private static let cardDateFormatter: DateFormatter = {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d, yyyy 'at' HH:mm"
+        return fmt
+    }()
+
+    private func diningResultCard(_ dining: EmailParser.DiningParseData) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(dining.restaurantName.isEmpty ? "Dining Reservation" : dining.restaurantName)
+                    .font(VoyagerFont.bodyLarge)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.voyagerOnSurface)
+                Spacer()
+                confidencePill(dining.confidence)
+            }
+
+            if let time = dining.reservationTime {
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 12))
+                    Text(Self.cardDateFormatter.string(from: time))
+                }
+                .font(VoyagerFont.bodySmall)
+                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+            }
+
+            if !dining.address.isEmpty {
+                Text(dining.address)
+                    .font(VoyagerFont.bodySmall)
+                    .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                    .lineLimit(2)
+            }
+        }
+        .padding(16)
+        .background(Color.voyagerCard)
+        .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.large))
+        .overlay(
+            RoundedRectangle(cornerRadius: VoyagerRadius.large)
+                .stroke(Color.voyagerOutlineVariant.opacity(0.3), lineWidth: 0.5)
+        )
+    }
+
+    private func activityResultCard(_ activity: EmailParser.ActivityParseData) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(activity.activityName.isEmpty ? "Activity" : activity.activityName)
+                    .font(VoyagerFont.bodyLarge)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.voyagerOnSurface)
+                Spacer()
+                confidencePill(activity.confidence)
+            }
+
+            if let start = activity.startTime {
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 12))
+                    Text(Self.cardDateFormatter.string(from: start))
+                }
+                .font(VoyagerFont.bodySmall)
+                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+            }
+
+            if !activity.location.isEmpty {
+                Text(activity.location)
+                    .font(VoyagerFont.bodySmall)
+                    .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                    .lineLimit(2)
+            }
+        }
+        .padding(16)
+        .background(Color.voyagerCard)
+        .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.large))
+        .overlay(
+            RoundedRectangle(cornerRadius: VoyagerRadius.large)
+                .stroke(Color.voyagerOutlineVariant.opacity(0.3), lineWidth: 0.5)
+        )
+    }
+
     private func confidencePill(_ confidence: Double) -> some View {
         Text("\(Int(confidence * 100))%")
-            .font(VoyagerFont.labelCapsFallback)
+            .font(VoyagerFont.labelCaps)
             .foregroundStyle(confidence >= 0.7 ? Color.voyagerPrimaryAccent : Color.voyagerTertiary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)

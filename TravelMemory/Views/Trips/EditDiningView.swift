@@ -15,101 +15,16 @@ extension MKMapItem: @retroactive Identifiable {
     public var id: ObjectIdentifier { ObjectIdentifier(self) }
 }
 
-// MARK: - Restaurant Search Manager
-
-@MainActor
-class RestaurantSearchManager: ObservableObject {
-    @Published var results: [MKMapItem] = []
-    @Published var isSearching = false
-    
-    private var searchTask: Task<Void, Never>?
-    var searchRegion: MKCoordinateRegion?
-    
-    func search(query: String) {
-        searchTask?.cancel()
-        
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else {
-            results = []
-            return
-        }
-        
-        isSearching = true
-        searchTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
-            
-            // Search with the exact name (don't append "restaurant" — it confuses pasted names)
-            let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = trimmed
-            request.resultTypes = .pointOfInterest
-            if let region = searchRegion {
-                request.region = region
-            }
-            
-            let search = MKLocalSearch(request: request)
-            do {
-                let response = try await search.start()
-                if !Task.isCancelled {
-                    // Filter results to only those within ~50km of search region center
-                    let filtered: [MKMapItem]
-                    if let region = searchRegion {
-                        let center = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude)
-                        filtered = response.mapItems.filter { item in
-                            let itemLoc = CLLocation(latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude)
-                            return center.distance(from: itemLoc) < 50_000 // 50km
-                        }
-                    } else {
-                        filtered = Array(response.mapItems)
-                    }
-                    self.results = Array(filtered.prefix(6))
-                }
-            } catch {
-                if !Task.isCancelled {
-                    self.results = []
-                }
-            }
-            self.isSearching = false
-        }
-    }
-    
-    func searchArea(region: MKCoordinateRegion) {
-        searchTask?.cancel()
-        isSearching = true
-        
-        searchTask = Task {
-            let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = "restaurant"
-            request.resultTypes = .pointOfInterest
-            request.region = region
-            
-            let search = MKLocalSearch(request: request)
-            do {
-                let response = try await search.start()
-                if !Task.isCancelled {
-                    self.results = response.mapItems
-                }
-            } catch {
-                if !Task.isCancelled {
-                    self.results = []
-                }
-            }
-            self.isSearching = false
-        }
-    }
-    
-    func clear() {
-        searchTask?.cancel()
-        results = []
-    }
-}
-
 // MARK: - Edit Dining View
 
 struct EditDiningView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var reservation: DiningReservation
+    /// True when editing a just-created draft — dismissed without saving,
+    /// the draft is deleted again so no empty rows linger in the timeline.
+    var isNew: Bool = false
+    @State private var isFinalized = false
     
     @State private var restaurantName = ""
     @State private var address = ""
@@ -120,7 +35,11 @@ struct EditDiningView: View {
     @State private var showDeleteConfirm = false
     @State private var showMapBrowser = false
     
-    @StateObject private var searchManager = RestaurantSearchManager()
+    @StateObject private var searchManager = PlaceSearchManager(
+        pointOfInterestOnly: true,
+        resultLimit: 6,
+        pointOfInterestCategories: [.restaurant, .cafe, .bakery, .brewery, .winery]
+    )
     @State private var isNameFieldFocused = false
     @FocusState private var nameFieldFocus: Bool
     
@@ -134,22 +53,22 @@ struct EditDiningView: View {
                         // Restaurant name with search
                         restaurantNameSection
                         
-                        formField(title: "ADDRESS", placeholder: "Full address", text: $address)
+                        VoyagerFormField(title: "ADDRESS", placeholder: "Full address", text: $address)
                         
-                        dateField(title: "RESERVATION TIME", date: $reservationTime)
+                        VoyagerDateField(title: "RESERVATION TIME", date: $reservationTime)
                         
                         // Party size stepper
                         partySizeSection
                         
-                        formField(title: "CONFIRMATION CODE", placeholder: "Optional", text: $confirmationCode)
+                        VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "Optional", text: $confirmationCode)
                         
                         VStack(alignment: .leading, spacing: 6) {
                             Text("NOTES")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(1.0)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             TextField("Dietary requirements, special requests...", text: $notes, axis: .vertical)
-                                .font(VoyagerFont.bodyLargeFallback)
+                                .font(VoyagerFont.bodyLarge)
                                 .foregroundStyle(Color.voyagerOnSurface)
                                 .lineLimit(2...4)
                                 .padding(12)
@@ -167,7 +86,7 @@ struct EditDiningView: View {
                         
                         Button(role: .destructive) { showDeleteConfirm = true } label: {
                             Text("DELETE RESERVATION")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
                                 .foregroundStyle(Color.voyagerError)
                                 .frame(maxWidth: .infinity)
@@ -178,7 +97,7 @@ struct EditDiningView: View {
                     .padding(.vertical, 16)
                 }
             }
-            .navigationTitle("Edit Reservation")
+            .navigationTitle(isNew ? "Add Reservation" : "Edit Reservation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -189,8 +108,9 @@ struct EditDiningView: View {
             }
             .alert("Delete Reservation?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
+                    isFinalized = true
                     modelContext.delete(reservation)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
@@ -211,6 +131,13 @@ struct EditDiningView: View {
             loadValues()
             geocodeDestination()
         }
+        .onDisappear {
+            // Draft dismissed without saving — remove it again
+            if isNew && !isFinalized {
+                modelContext.delete(reservation)
+                modelContext.saveOrLog()
+            }
+        }
     }
     
     // MARK: - Restaurant Name with Search
@@ -219,7 +146,7 @@ struct EditDiningView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("RESTAURANT")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(1.0)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 
@@ -268,7 +195,7 @@ struct EditDiningView: View {
             }
             
             TextField("Search restaurants near your stay...", text: $restaurantName)
-                .font(VoyagerFont.bodyLargeFallback)
+                .font(VoyagerFont.bodyLarge)
                 .foregroundStyle(Color.voyagerOnSurface)
                 .padding(12)
                 .background(Color.voyagerInputBackground)
@@ -312,7 +239,7 @@ struct EditDiningView: View {
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundStyle(Color.voyagerOnSurface)
                                         .lineLimit(1)
-                                    
+
                                     if let address = item.placemark.formattedAddress {
                                         Text(address)
                                             .font(.system(size: 12))
@@ -320,8 +247,15 @@ struct EditDiningView: View {
                                             .lineLimit(1)
                                     }
                                 }
-                                
+
                                 Spacer()
+
+                                // Distance from the stay / trip center
+                                if let distance = searchManager.distance(to: item) {
+                                    Text(Self.distanceText(distance))
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.voyagerPrimary)
+                                }
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
@@ -360,7 +294,7 @@ struct EditDiningView: View {
     private var partySizeSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("PARTY SIZE")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
@@ -389,7 +323,7 @@ struct EditDiningView: View {
                 Spacer()
                 
                 Text(partySize == 1 ? "guest" : "guests")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
             .padding(12)
@@ -437,6 +371,14 @@ struct EditDiningView: View {
         address = item.placemark.formattedAddress ?? ""
         searchManager.clear()
     }
+
+    /// "650 m" / "2.4 km" style label
+    static func distanceText(_ distance: CLLocationDistance) -> String {
+        if distance < 1000 {
+            return "\(Int((distance / 50).rounded() * 50)) m"
+        }
+        return String(format: "%.1f km", distance / 1000)
+    }
     
     private func loadValues() {
         restaurantName = reservation.restaurantName
@@ -448,13 +390,14 @@ struct EditDiningView: View {
     }
     
     private func save() {
+        isFinalized = true
         reservation.restaurantName = restaurantName
         reservation.address = address
         reservation.reservationTime = reservationTime
         reservation.partySize = partySize
         reservation.confirmationCode = confirmationCode
         reservation.notes = notes
-        try? modelContext.save()
+        modelContext.saveOrLog()
         dismiss()
     }
     
@@ -493,40 +436,7 @@ struct EditDiningView: View {
         }
     }
     
-    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            TextField(placeholder, text: text)
-                .font(VoyagerFont.bodyLargeFallback)
-                .foregroundStyle(Color.voyagerOnSurface)
-                .padding(12)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
-                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
-                )
-        }
-    }
     
-    private func dateField(title: String, date: Binding<Date>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            DatePicker("", selection: date)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .tint(Color.voyagerPrimary)
-                .padding(10)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-        }
-    }
 }
 
 // MARK: - Formatted Address Helper
@@ -560,82 +470,48 @@ struct RestaurantMapBrowser: View {
     let destination: String
     let accommodationName: String
     let accommodationAddress: String
-    @ObservedObject var searchManager: RestaurantSearchManager
+    @ObservedObject var searchManager: PlaceSearchManager
     let onSelect: (MKMapItem) -> Void
     
     @Environment(\.dismiss) private var dismiss
-    @State private var region = MKCoordinateRegion(
+    private static let defaultRegion = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 38.72, longitude: -9.14),
         span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)
     )
+    @State private var cameraPosition: MapCameraPosition = .region(Self.defaultRegion)
+    /// The currently visible region, tracked for "search this area"
+    @State private var region = Self.defaultRegion
     @State private var selectedItem: MKMapItem?
     @State private var hasGeocoded = false
     @State private var searchText = ""
     @State private var stayCoordinate: CLLocationCoordinate2D?
     @State private var stayName: String = ""
+    /// Where the last area search ran — panning far from it re-searches.
+    @State private var lastSearchedCenter: CLLocationCoordinate2D?
     
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                Map(coordinateRegion: $region, annotationItems: allAnnotations) { ann in
-                    MapAnnotation(coordinate: ann.coordinate) {
-                        if ann.isStay {
-                            // Accommodation pin
-                            VStack(spacing: 2) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.voyagerTertiary)
-                                        .frame(width: 36, height: 36)
-                                    Image(systemName: "bed.double.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(.white)
-                                }
-                                .shadow(color: Color.voyagerTertiary.opacity(0.5), radius: 6, y: 2)
-                                
-                                Text(ann.name)
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color.voyagerTertiary.opacity(0.85))
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                            }
-                        } else {
-                            // Restaurant pin
-                            Button {
-                                selectedItem = ann.mapItem
-                            } label: {
-                                VStack(spacing: 2) {
-                                    Image(systemName: "fork.knife.circle.fill")
-                                        .font(.system(size: 30))
-                                        .foregroundStyle(
-                                            selectedItem == ann.mapItem ? Color(hex: "#FFB868") : Color.voyagerPrimary
-                                        )
-                                        .background(Circle().fill(.white).padding(3))
-                                    
-                                    if selectedItem == ann.mapItem {
-                                        Text(ann.name)
-                                            .font(.system(size: 10, weight: .semibold))
-                                            .foregroundStyle(.white)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color.black.opacity(0.75))
-                                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                                    }
-                                }
-                            }
+                Map(position: $cameraPosition) {
+                    ForEach(allAnnotations) { ann in
+                        Annotation(ann.isStay ? ann.name : "", coordinate: ann.coordinate) {
+                            annotationContent(ann)
                         }
                     }
                 }
+                .onMapCameraChange(frequency: .onEnd) { context in
+                    region = context.region
+                    autoSearchIfPannedFar()
+                }
                 .ignoresSafeArea(edges: .bottom)
-                
+
                 // Search bar overlay
                 VStack(spacing: 0) {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                         TextField("Search restaurants...", text: $searchText)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurface)
                             .onSubmit {
                                 searchInArea()
@@ -644,7 +520,7 @@ struct RestaurantMapBrowser: View {
                         if !searchText.isEmpty {
                             Button {
                                 searchText = ""
-                                searchManager.searchArea(region: region)
+                                searchManager.searchArea(region: region, query: "restaurant")
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
@@ -681,7 +557,7 @@ struct RestaurantMapBrowser: View {
                 // Search this area button
                 if selectedItem == nil {
                     Button {
-                        searchManager.searchArea(region: region)
+                        searchManager.searchArea(region: region, query: "restaurant")
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "arrow.clockwise")
@@ -715,18 +591,58 @@ struct RestaurantMapBrowser: View {
         }
     }
     
+    @ViewBuilder
+    private func annotationContent(_ ann: MapPinAnnotation) -> some View {
+        if ann.isStay {
+            // Accommodation pin
+            ZStack {
+                Circle()
+                    .fill(Color.voyagerTertiary)
+                    .frame(width: 36, height: 36)
+                Image(systemName: "bed.double.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white)
+            }
+            .shadow(color: Color.voyagerTertiary.opacity(0.5), radius: 6, y: 2)
+        } else {
+            // Restaurant pin
+            Button {
+                selectedItem = ann.mapItem
+            } label: {
+                VStack(spacing: 2) {
+                    Image(systemName: "fork.knife.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundStyle(
+                            selectedItem == ann.mapItem ? Color(hex: "#FFB868") : Color.voyagerPrimary
+                        )
+                        .background(Circle().fill(.white).padding(3))
+
+                    if selectedItem == ann.mapItem {
+                        Text(ann.name)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.black.opacity(0.75))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                }
+            }
+        }
+    }
+
     private func selectedRestaurantCard(_ item: MKMapItem) -> some View {
         VStack(spacing: 10) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.name ?? "Restaurant")
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     
                     if let addr = item.placemark.formattedAddress {
                         Text(addr)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             .lineLimit(2)
                     }
@@ -856,8 +772,10 @@ struct RestaurantMapBrowser: View {
                         center: loc.coordinate,
                         span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
                     )
+                    self.cameraPosition = .region(self.region)
+                    self.lastSearchedCenter = self.region.center
                     self.searchManager.searchRegion = self.region
-                    self.searchManager.searchArea(region: self.region)
+                    self.searchManager.searchArea(region: self.region, query: "restaurant")
                 } else if let dest = destAddr {
                     self.geocodeDestination(dest)
                 }
@@ -875,27 +793,29 @@ struct RestaurantMapBrowser: View {
                     center: loc.coordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
                 )
+                self.cameraPosition = .region(self.region)
+                self.lastSearchedCenter = self.region.center
                 self.searchManager.searchRegion = self.region
-                self.searchManager.searchArea(region: self.region)
+                self.searchManager.searchArea(region: self.region, query: "restaurant")
             }
         }
     }
     
     private func searchInArea() {
-        if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
-            searchManager.searchArea(region: region)
-        } else {
-            let request = MKLocalSearch.Request()
-            request.naturalLanguageQuery = searchText
-            request.resultTypes = .pointOfInterest
-            request.region = region
-            
-            Task {
-                let search = MKLocalSearch(request: request)
-                if let response = try? await search.start() {
-                    searchManager.results = response.mapItems
-                }
-            }
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        lastSearchedCenter = region.center
+        searchManager.searchArea(region: region, query: query.isEmpty ? "restaurant" : query)
+    }
+
+    /// Re-run the area search automatically once the camera settles more
+    /// than half a screen away from the last searched spot.
+    private func autoSearchIfPannedFar() {
+        guard let last = lastSearchedCenter else { return }
+        let lastLocation = CLLocation(latitude: last.latitude, longitude: last.longitude)
+        let center = CLLocation(latitude: region.center.latitude, longitude: region.center.longitude)
+        let visibleHeightMeters = region.span.latitudeDelta * 111_000
+        if center.distance(from: lastLocation) > visibleHeightMeters * 0.5 {
+            searchInArea()
         }
     }
 }

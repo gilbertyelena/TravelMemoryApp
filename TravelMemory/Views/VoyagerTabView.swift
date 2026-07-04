@@ -73,31 +73,35 @@ struct VoyagerTabView: View {
         HStack {
             ForEach(VoyagerTab.allCases, id: \.self) { tab in
                 Spacer()
-                VStack(spacing: 4) {
-                    Image(systemName: selectedTab == tab ? tab.activeIcon : tab.icon)
-                        .font(.system(size: 22))
-                        .symbolRenderingMode(.hierarchical)
-                        .scaleEffect(selectedTab == tab ? 1.1 : 1.0)
-                    
-                    Text(tab.label)
-                        .font(VoyagerFont.labelCapsFallback)
-                        .tracking(0.6)
-                        .textCase(.uppercase)
-                }
-                .foregroundStyle(
-                    selectedTab == tab
-                    ? Color.voyagerPrimary
-                    : Color.voyagerOnSurfaceVariant.opacity(0.6)
-                )
-                .if(selectedTab == tab) { view in
-                    view.voyagerGlow(color: .voyagerPrimary, radius: 12, opacity: 0.3)
-                }
-                .onTapGesture {
+                Button {
                     withAnimation(.easeOut(duration: 0.2)) {
                         selectedTab = tab
                     }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: selectedTab == tab ? tab.activeIcon : tab.icon)
+                            .font(.system(size: 22))
+                            .symbolRenderingMode(.hierarchical)
+                            .scaleEffect(selectedTab == tab ? 1.1 : 1.0)
+
+                        Text(tab.label)
+                            .font(VoyagerFont.labelCaps)
+                            .tracking(0.6)
+                            .textCase(.uppercase)
+                    }
+                    .foregroundStyle(
+                        selectedTab == tab
+                        ? Color.voyagerPrimary
+                        : Color.voyagerOnSurfaceVariant.opacity(0.6)
+                    )
+                    .if(selectedTab == tab) { view in
+                        view.voyagerGlow(color: .voyagerPrimary, radius: 12, opacity: 0.3)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
+                .accessibilityLabel(tab.label)
+                .accessibilityAddTraits(selectedTab == tab ? [.isSelected] : [])
                 Spacer()
             }
         }
@@ -128,10 +132,10 @@ struct ProfilePlaceholderView: View {
                     .font(.system(size: 64))
                     .foregroundStyle(Color.voyagerPrimary)
                 Text("Profile")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("Coming Soon")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
         }
@@ -164,7 +168,7 @@ struct VoyagerTopBar: View {
             
             // Brand Name
             Text("Travel Steward")
-                .font(VoyagerFont.headlineMediumFallback)
+                .font(VoyagerFont.headlineMedium)
                 .foregroundStyle(Color.voyagerPrimary)
                 .tracking(-0.5)
             

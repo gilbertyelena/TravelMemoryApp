@@ -68,7 +68,7 @@ struct PackingListView: View {
                             Image(systemName: "plus.circle")
                                 .font(.system(size: 16))
                             Text("ADD CATEGORY")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
                         }
                         .foregroundStyle(Color.voyagerPrimary)
@@ -129,14 +129,14 @@ struct PackingListView: View {
             Button("Save") {
                 if let item = editingItem {
                     item.name = editItemName
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                 }
                 editingItem = nil
             }
             Button("Delete", role: .destructive) {
                 if let item = editingItem {
                     modelContext.delete(item)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                 }
                 editingItem = nil
             }
@@ -151,11 +151,11 @@ struct PackingListView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(packedItems) of \(totalItems) packed")
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(progress >= 1.0 ? "All packed! ✈️" : "Keep going...")
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
                 Spacer()
@@ -197,10 +197,10 @@ struct PackingListView: View {
             
             VStack(spacing: 6) {
                 Text("Start Your Packing List")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("Add categories or tap ••• for suggested items")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
         }
@@ -219,7 +219,7 @@ struct PackingListView: View {
                         .font(.system(size: 14))
                         .foregroundStyle(Color(hex: category.colorHex))
                     Text(category.name)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                 }
@@ -228,7 +228,7 @@ struct PackingListView: View {
                 
                 if category.totalCount > 0 {
                     Text(category.progressText)
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .foregroundStyle(category.isComplete ? Color.voyagerPrimaryAccent : Color.voyagerOnSurfaceVariant)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(category.isComplete ? Color.voyagerPrimaryAccent.opacity(0.12) : Color.voyagerSurfaceVariant)
@@ -238,7 +238,7 @@ struct PackingListView: View {
                 // Delete category
                 Button {
                     modelContext.delete(category)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                 } label: {
                     Image(systemName: "xmark.circle")
                         .font(.system(size: 14))
@@ -260,7 +260,7 @@ struct PackingListView: View {
                         .frame(width: 20, height: 20)
                     
                     TextField("Item name", text: $newItemText)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .onSubmit {
                             addItem(to: category)
@@ -292,7 +292,7 @@ struct PackingListView: View {
                         Image(systemName: "plus")
                             .font(.system(size: 12))
                         Text("Add item")
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                     }
                     .foregroundStyle(Color.voyagerPrimary.opacity(0.7))
                     .padding(.vertical, 4)
@@ -316,7 +316,7 @@ struct PackingListView: View {
             Button {
                 withAnimation(.easeOut(duration: 0.2)) {
                     item.isPacked.toggle()
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                 }
             } label: {
                 ZStack {
@@ -344,7 +344,7 @@ struct PackingListView: View {
                 editItemName = item.name
             } label: {
                 Text(item.name)
-                    .font(VoyagerFont.bodyLargeFallback)
+                    .font(VoyagerFont.bodyLarge)
                     .foregroundStyle(Color.voyagerOnSurface)
                     .strikethrough(item.isPacked)
                     .opacity(item.isPacked ? 0.5 : 1)
@@ -355,7 +355,7 @@ struct PackingListView: View {
             
             if item.quantity > 1 {
                 Text("×\(item.quantity)")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
         }
@@ -387,7 +387,7 @@ struct PackingListView: View {
         )
         category.trip = trip
         modelContext.insert(category)
-        try? modelContext.save()
+        modelContext.saveOrLog()
     }
     
     private func addItem(to category: PackingCategoryModel) {
@@ -398,7 +398,7 @@ struct PackingListView: View {
         )
         item.category = category
         modelContext.insert(item)
-        try? modelContext.save()
+        modelContext.saveOrLog()
         newItemText = ""
         // Keep the add field open for fast entry
     }
@@ -409,7 +409,7 @@ struct PackingListView: View {
                 item.isPacked = false
             }
         }
-        try? modelContext.save()
+        modelContext.saveOrLog()
     }
     
     private func addSuggestedCategories() {
@@ -440,6 +440,6 @@ struct PackingListView: View {
                 modelContext.insert(item)
             }
         }
-        try? modelContext.save()
+        modelContext.saveOrLog()
     }
 }

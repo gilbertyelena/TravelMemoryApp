@@ -218,15 +218,15 @@ class BookingLinkExtractor: ObservableObject {
                         details.price = "\(currency) \(price)"
                     }
                 }
-                
+
                 // Also check @graph array (used by some sites)
-                if let graph = obj["@graph"] as? [[String: Any]] {
-                    for item in graph {
-                        var tempDetails = AccommodationDetails()
-                        let wrappedItem = ["@type": item["@type"] ?? ""] as [String: Any]
-                        let mergedItem = item.merging(wrappedItem) { current, _ in current }
-                        parseJSONLD(html: "<script type=\"application/ld+json\">\(try! JSONSerialization.data(withJSONObject: mergedItem).base64EncodedString())</script>", into: &tempDetails)
-                    }
+                if let graph = obj["@graph"] as? [[String: Any]],
+                   let graphData = try? JSONSerialization.data(withJSONObject: graph),
+                   let graphJSON = String(data: graphData, encoding: .utf8) {
+                    parseJSONLD(
+                        html: "<script type=\"application/ld+json\">\(graphJSON)</script>",
+                        into: &details
+                    )
                 }
             }
         }

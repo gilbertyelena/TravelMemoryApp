@@ -13,6 +13,10 @@ struct EditActivityView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var activity: TripActivity
+    /// True when editing a just-created draft — dismissed without saving,
+    /// the draft is deleted again so no empty rows linger in the timeline.
+    var isNew: Bool = false
+    @State private var isFinalized = false
     
     @State private var activityName = ""
     @State private var provider = ""
@@ -32,12 +36,12 @@ struct EditActivityView: View {
                 
                 ScrollView {
                     VStack(spacing: VoyagerSpacing.stackLarge) {
-                        formField(title: "ACTIVITY NAME", placeholder: "e.g. Scuba Diving", text: $activityName)
+                        VoyagerFormField(title: "ACTIVITY NAME", placeholder: "e.g. Scuba Diving", text: $activityName)
                         
                         // Category chips
                         VStack(alignment: .leading, spacing: 8) {
                             Text("CATEGORY")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(1.0)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             
@@ -52,24 +56,24 @@ struct EditActivityView: View {
                             }
                         }
                         
-                        formField(title: "PROVIDER", placeholder: "e.g. Blue Ocean Divers", text: $provider)
-                        formField(title: "LOCATION", placeholder: "Meeting point or venue", text: $location)
+                        VoyagerFormField(title: "PROVIDER", placeholder: "e.g. Blue Ocean Divers", text: $provider)
+                        VoyagerFormField(title: "LOCATION", placeholder: "Meeting point or venue", text: $location)
                         
-                        dateField(title: "START TIME", date: $startTime)
-                        dateField(title: "END TIME", date: $endTime)
+                        VoyagerDateField(title: "START TIME", date: $startTime)
+                        VoyagerDateField(title: "END TIME", date: $endTime)
                         
                         HStack(spacing: 10) {
-                            formField(title: "CONFIRMATION", placeholder: "Ref code", text: $confirmationCode)
-                            formField(title: "PRICE", placeholder: "€85pp", text: $priceInfo)
+                            VoyagerFormField(title: "CONFIRMATION", placeholder: "Ref code", text: $confirmationCode)
+                            VoyagerFormField(title: "PRICE", placeholder: "€85pp", text: $priceInfo)
                         }
                         
                         VStack(alignment: .leading, spacing: 6) {
                             Text("NOTES")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(1.0)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             TextField("Special instructions, what to bring...", text: $notes, axis: .vertical)
-                                .font(VoyagerFont.bodyLargeFallback)
+                                .font(VoyagerFont.bodyLarge)
                                 .foregroundStyle(Color.voyagerOnSurface)
                                 .lineLimit(2...4)
                                 .padding(12)
@@ -87,7 +91,7 @@ struct EditActivityView: View {
                         
                         Button(role: .destructive) { showDeleteConfirm = true } label: {
                             Text("DELETE ACTIVITY")
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
                                 .foregroundStyle(Color.voyagerError)
                                 .frame(maxWidth: .infinity)
@@ -98,7 +102,7 @@ struct EditActivityView: View {
                     .padding(.vertical, 16)
                 }
             }
-            .navigationTitle("Edit Activity")
+            .navigationTitle(isNew ? "Add Activity" : "Edit Activity")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -109,8 +113,9 @@ struct EditActivityView: View {
             }
             .alert("Delete Activity?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
+                    isFinalized = true
                     modelContext.delete(activity)
-                    try? modelContext.save()
+                    modelContext.saveOrLog()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
@@ -118,6 +123,13 @@ struct EditActivityView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear { loadValues() }
+        .onDisappear {
+            // Draft dismissed without saving — remove it again
+            if isNew && !isFinalized {
+                modelContext.delete(activity)
+                modelContext.saveOrLog()
+            }
+        }
     }
     
     // MARK: - Category Chip
@@ -163,6 +175,7 @@ struct EditActivityView: View {
     }
     
     private func save() {
+        isFinalized = true
         activity.activityName = activityName
         activity.provider = provider
         activity.location = location
@@ -172,44 +185,11 @@ struct EditActivityView: View {
         activity.confirmationCode = confirmationCode
         activity.notes = notes
         activity.priceInfo = priceInfo
-        try? modelContext.save()
+        modelContext.saveOrLog()
         dismiss()
     }
     
     // MARK: - Helpers
     
-    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            TextField(placeholder, text: text)
-                .font(VoyagerFont.bodyLargeFallback)
-                .foregroundStyle(Color.voyagerOnSurface)
-                .padding(12)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
-                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
-                )
-        }
-    }
     
-    private func dateField(title: String, date: Binding<Date>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            DatePicker("", selection: date)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .tint(Color.voyagerPrimary)
-                .padding(10)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-        }
-    }
 }

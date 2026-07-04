@@ -60,13 +60,13 @@ struct LiveItineraryView: View {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .medium))
                     Text("Back")
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                 }
                 .foregroundStyle(Color.voyagerPrimary)
             }
             Spacer()
             Text("LIVE MODE")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.2)
                 .foregroundStyle(Color.voyagerPrimaryAccent)
         }
@@ -89,10 +89,10 @@ struct LiveItineraryView: View {
             
             VStack(spacing: 6) {
                 Text("No Upcoming Flights")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("Forward a flight confirmation email\nto see live boarding info here")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     .multilineTextAlignment(.center)
             }
@@ -121,10 +121,10 @@ struct LiveItineraryView: View {
                 
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(flight.airlineAndFlight)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     Text(timeUntilDeparture > 0 ? "UPCOMING" : "DEPARTED")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .tracking(0.6)
                         .foregroundStyle(timeUntilDeparture > 0 ? Color.voyagerPrimary : Color.voyagerOnSurfaceVariant)
                 }
@@ -135,7 +135,7 @@ struct LiveItineraryView: View {
             if timeUntilDeparture > 0 {
                 VStack(spacing: 4) {
                     Text("BOARDING IN")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .tracking(1.5)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     
@@ -152,10 +152,10 @@ struct LiveItineraryView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(flight.departureAirport)
-                        .font(VoyagerFont.headlineMediumFallback)
+                        .font(VoyagerFont.headlineMedium)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(flight.departureCity)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
                 
@@ -176,10 +176,10 @@ struct LiveItineraryView: View {
                 
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(flight.arrivalAirport)
-                        .font(VoyagerFont.headlineMediumFallback)
+                        .font(VoyagerFont.headlineMedium)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(flight.arrivalCity)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
             }
@@ -194,13 +194,13 @@ struct LiveItineraryView: View {
             if !flight.seat.isEmpty {
                 HStack {
                     Text("SEAT \(flight.seat)")
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .tracking(0.6)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     Spacer()
                     if !flight.confirmationCode.isEmpty {
                         Text("REF: \(flight.confirmationCode)")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerPrimary)
                     }
@@ -239,7 +239,7 @@ struct LiveItineraryView: View {
                             .foregroundStyle(Color.voyagerPrimary)
                     )
                 Text(label)
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.voyagerOnSurface)
             }

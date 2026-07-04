@@ -89,10 +89,10 @@ struct TripsListView: View {
                         // Page Title
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Your Trips")
-                                .font(VoyagerFont.headlineLargeFallback)
+                                .font(VoyagerFont.headlineLarge)
                                 .foregroundStyle(Color.voyagerOnBackground)
                             Text("\(trips.count) trip\(trips.count == 1 ? "" : "s")")
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                         }
                         .padding(.horizontal, VoyagerSpacing.marginMain)
@@ -116,7 +116,7 @@ struct TripsListView: View {
                                         .font(.system(size: 16))
                                     Text("NEW TRIP")
                                 }
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
@@ -133,7 +133,7 @@ struct TripsListView: View {
                                         .font(.system(size: 16))
                                     Text("FROM EMAIL")
                                 }
-                                .font(VoyagerFont.labelCapsFallback)
+                                .font(VoyagerFont.labelCaps)
                                 .tracking(0.6)
                                 .foregroundStyle(Color.voyagerPrimary)
                                 .frame(maxWidth: .infinity)
@@ -214,7 +214,7 @@ struct TripsListView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text("NEXT UP")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(1.0)
                             .foregroundStyle(info.accentColor)
                         
@@ -222,18 +222,18 @@ struct TripsListView: View {
                             .foregroundStyle(Color.voyagerOutlineVariant)
                         
                         Text(TripCountdown.text(from: info.date).uppercased())
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(TripCountdown.color(from: info.date))
                     }
                     
                     Text(info.title)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     
                     Text(info.subtitle)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
                 
@@ -276,10 +276,10 @@ struct TripsListView: View {
             
             VStack(spacing: 8) {
                 Text("No Trips Yet")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("Create a trip manually or forward\na booking confirmation email")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
@@ -320,10 +320,10 @@ struct TripsListView: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(trip.destination.isEmpty ? trip.name : trip.destination)
-                            .font(VoyagerFont.headlineMediumFallback)
+                            .font(VoyagerFont.headlineMedium)
                             .foregroundStyle(Color.voyagerOnSurface)
                         Text(trip.dateRangeText)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                     
@@ -332,7 +332,7 @@ struct TripsListView: View {
                     // Countdown badge
                     VStack(alignment: .trailing, spacing: 4) {
                         Text(TripCountdown.text(from: trip.startDate))
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.4)
                             .foregroundStyle(TripCountdown.color(from: trip.startDate))
                             .padding(.horizontal, 10)
@@ -380,7 +380,7 @@ struct TripsListView: View {
                     
                     HStack(spacing: 4) {
                         Text("\(trip.durationDays)d")
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12))
@@ -404,7 +404,7 @@ struct TripsListView: View {
             Image(systemName: icon)
                 .font(.system(size: 11))
             Text(label)
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
         }
         .foregroundStyle(Color.voyagerOnSurfaceVariant)
     }

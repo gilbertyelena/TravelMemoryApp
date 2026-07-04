@@ -39,10 +39,10 @@ struct OnboardingOverlay: View {
                         if currentPage == 0 {
                             VStack(spacing: 8) {
                                 Text("Welcome to")
-                                    .font(VoyagerFont.bodyLargeFallback)
+                                    .font(VoyagerFont.bodyLarge)
                                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                                 Text("Travel Steward")
-                                    .font(VoyagerFont.headlineLargeFallback)
+                                    .font(VoyagerFont.headlineLarge)
                                     .foregroundStyle(Color.voyagerPrimary)
                             }
                             .padding(.bottom, 8)
@@ -62,11 +62,11 @@ struct OnboardingOverlay: View {
                             }
                             
                             Text(tip.title)
-                                .font(VoyagerFont.headlineMediumFallback)
+                                .font(VoyagerFont.headlineMedium)
                                 .foregroundStyle(Color.voyagerOnSurface)
                             
                             Text(tip.subtitle)
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                                 .multilineTextAlignment(.center)
                                 .lineSpacing(4)
@@ -89,7 +89,7 @@ struct OnboardingOverlay: View {
                                     withAnimation { currentPage -= 1 }
                                 } label: {
                                     Text("BACK")
-                                        .font(VoyagerFont.labelCapsFallback)
+                                        .font(VoyagerFont.labelCaps)
                                         .tracking(0.6)
                                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                                         .frame(maxWidth: .infinity)
@@ -109,7 +109,7 @@ struct OnboardingOverlay: View {
                                 }
                             } label: {
                                 Text(currentPage < tips.count - 1 ? "NEXT" : "GET STARTED")
-                                    .font(VoyagerFont.labelCapsFallback)
+                                    .font(VoyagerFont.labelCaps)
                                     .tracking(0.6)
                                     .foregroundStyle(.white)
                                     .frame(maxWidth: .infinity)
@@ -126,7 +126,7 @@ struct OnboardingOverlay: View {
                             }
                         } label: {
                             Text("Skip")
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant.opacity(0.6))
                         }
                     }

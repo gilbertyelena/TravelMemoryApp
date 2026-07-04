@@ -11,11 +11,13 @@ import Foundation
 
 struct EmailParser {
     
-    /// Result of parsing an email
+    /// Result of parsing an email or calendar file
     struct ParseResult {
         var flights: [FlightParseData] = []
         var hotels: [HotelParseData] = []
         var carRentals: [CarRentalParseData] = []
+        var dining: [DiningParseData] = []
+        var activities: [ActivityParseData] = []
         var overallConfidence: Double = 0.0
         var issues: [String] = []
         var suggestedDestination: String = ""
@@ -56,6 +58,24 @@ struct EmailParser {
         var isPrepaid: Bool
         var confidence: Double
     }
+
+    struct DiningParseData {
+        var restaurantName: String = ""
+        var address: String = ""
+        var reservationTime: Date?
+        var partySize: Int = 2
+        var notes: String = ""
+        var confidence: Double = 0.5
+    }
+
+    struct ActivityParseData {
+        var activityName: String = ""
+        var location: String = ""
+        var startTime: Date?
+        var endTime: Date?
+        var notes: String = ""
+        var confidence: Double = 0.5
+    }
     
     // MARK: - Main Parse Entry Point
     
@@ -72,8 +92,7 @@ struct EmailParser {
         let isCarEmail = detectCarRentalEmail(subject: normalizedSubject, body: normalizedBody, sender: sender)
         
         if isFlightEmail {
-            let flight = parseFlightDetails(from: combinedText)
-            result.flights.append(flight)
+            result.flights = parseFlights(from: combinedText)
         }
         
         if isHotelEmail {
@@ -198,7 +217,89 @@ struct EmailParser {
     }
     
     // MARK: - Flight Parsing
-    
+
+    /// Airline display names keyed by IATA designator.
+    static let airlinesByCode: [String: String] = [
+        "LH": "Lufthansa", "UA": "United", "DL": "Delta",
+        "AA": "American Airlines", "WN": "Southwest",
+        "BA": "British Airways", "AF": "Air France",
+        "KL": "KLM", "EK": "Emirates", "VS": "Virgin Atlantic",
+        "B6": "JetBlue", "AS": "Alaska Airlines", "QF": "Qantas",
+        "FR": "Ryanair", "U2": "EasyJet", "NK": "Spirit",
+        "W6": "Wizz Air", "TK": "Turkish Airlines", "LX": "Swiss",
+        "OS": "Austrian", "IB": "Iberia", "VY": "Vueling",
+        "TP": "TAP Air Portugal", "EI": "Aer Lingus", "DY": "Norwegian",
+        "EW": "Eurowings", "AY": "Finnair", "LO": "LOT Polish Airlines",
+        "SK": "SAS", "AC": "Air Canada", "EY": "Etihad",
+        "QR": "Qatar Airways", "SQ": "Singapore Airlines",
+        "CX": "Cathay Pacific", "NH": "ANA", "JL": "Japan Airlines",
+        "FI": "Icelandair"
+    ]
+
+    /// Parses every flight segment in the text. Booking confirmations
+    /// commonly contain several legs (outbound + return, connections);
+    /// the text is split at each distinct flight number and each chunk
+    /// parsed separately, then chunks describing the same flight are merged.
+    static func parseFlights(from text: String) -> [FlightParseData] {
+        // Occurrences of flight numbers with a known airline designator
+        let candidates = allMatchRanges(in: text, pattern: #"\b([A-Z]{2})\s?(\d{1,4})\b"#)
+            .filter { airlinesByCode.keys.contains(String($0.value.prefix(2))) }
+
+        let uniqueNumbers = Set(candidates.map { $0.value.replacingOccurrences(of: " ", with: "") })
+        guard uniqueNumbers.count >= 2 else {
+            return [parseFlightDetails(from: text)]
+        }
+
+        // Split the text into chunks at each occurrence (the first chunk
+        // keeps the preamble so subject-line context isn't lost).
+        let nsText = text as NSString
+        var segments: [FlightParseData] = []
+        for (index, candidate) in candidates.enumerated() {
+            let start = index == 0 ? 0 : candidate.range.location
+            let end = index + 1 < candidates.count ? candidates[index + 1].range.location : nsText.length
+            guard end > start else { continue }
+            let chunk = nsText.substring(with: NSRange(location: start, length: end - start))
+
+            var flight = parseFlightDetails(from: chunk)
+            // The chunk starts at this candidate — it owns the segment.
+            flight.flightNumber = candidate.value.replacingOccurrences(of: " ", with: "")
+            if flight.airline.isEmpty {
+                flight.airline = airlinesByCode[String(flight.flightNumber.prefix(2))] ?? ""
+            }
+            segments.append(flight)
+        }
+
+        // Merge chunks that describe the same flight (e.g. the subject
+        // line repeats the outbound number without any details).
+        var merged: [FlightParseData] = []
+        for segment in segments {
+            if let existingIndex = merged.firstIndex(where: { $0.flightNumber == segment.flightNumber }) {
+                merged[existingIndex] = mergeFlights(merged[existingIndex], segment)
+            } else {
+                merged.append(segment)
+            }
+        }
+        return merged
+    }
+
+    /// Field-wise merge of two parses of the same flight, preferring
+    /// whichever side actually extracted a value.
+    private static func mergeFlights(_ a: FlightParseData, _ b: FlightParseData) -> FlightParseData {
+        var result = a
+        if result.airline.isEmpty { result.airline = b.airline }
+        if result.departureAirport.isEmpty { result.departureAirport = b.departureAirport }
+        if result.departureCity.isEmpty { result.departureCity = b.departureCity }
+        if result.arrivalAirport.isEmpty { result.arrivalAirport = b.arrivalAirport }
+        if result.arrivalCity.isEmpty { result.arrivalCity = b.arrivalCity }
+        if result.departureTime == nil { result.departureTime = b.departureTime }
+        if result.arrivalTime == nil { result.arrivalTime = b.arrivalTime }
+        if result.gate.isEmpty { result.gate = b.gate }
+        if result.seat.isEmpty { result.seat = b.seat }
+        if result.confirmationCode.isEmpty { result.confirmationCode = b.confirmationCode }
+        result.confidence = max(result.confidence, b.confidence)
+        return result
+    }
+
     private static func parseFlightDetails(from text: String) -> FlightParseData {
         var flight = FlightParseData(
             airline: "", flightNumber: "",
@@ -210,44 +311,49 @@ struct EmailParser {
         )
         
         var confidenceBoost = 0.0
-        
-        // Extract flight number (e.g. "LH411", "UA 1234", "DL 456")
-        if let match = firstMatch(in: text, pattern: #"([A-Z]{2})\s?(\d{1,4})"#) {
-            let components = match.components(separatedBy: " ").joined()
-            if let codeMatch = firstMatch(in: components, pattern: #"([A-Z]{2})(\d+)"#) {
-                flight.flightNumber = codeMatch
-                confidenceBoost += 0.1
-            }
-        }
-        
+
         // Extract airline name
-        let airlines = [
-            "Lufthansa": "LH", "United": "UA", "Delta": "DL",
-            "American Airlines": "AA", "Southwest": "WN",
-            "British Airways": "BA", "Air France": "AF",
-            "KLM": "KL", "Emirates": "EK", "Virgin Atlantic": "VS",
-            "JetBlue": "B6", "Alaska Airlines": "AS", "Qantas": "QF",
-            "Ryanair": "FR", "EasyJet": "U2", "Spirit": "NK"
-        ]
-        for (name, code) in airlines {
+        var airlineCode: String?
+        for (code, name) in airlinesByCode {
             if text.localizedCaseInsensitiveContains(name) {
                 flight.airline = name
-                if flight.flightNumber.isEmpty || !flight.flightNumber.hasPrefix(code) {
-                    // Keep found flight number but set airline
-                }
+                airlineCode = code
                 confidenceBoost += 0.1
                 break
             }
         }
-        
-        // Extract airport codes (3-letter IATA codes)
+
+        // Extract flight number (e.g. "LH411", "UA 1234", "DL 456").
+        // Prefer a number carrying a known airline designator — a bare
+        // [A-Z]{2}\d+ pattern matches far too much ordinary text.
+        let flightNumberCandidates = allMatches(in: text, pattern: #"\b([A-Z]{2})\s?(\d{1,4})\b"#)
+        for candidate in flightNumberCandidates {
+            let compact = candidate.replacingOccurrences(of: " ", with: "")
+            let designator = String(compact.prefix(2))
+            let matchesDetectedAirline = airlineCode.map { designator == $0 } ?? false
+            if matchesDetectedAirline || airlinesByCode.keys.contains(designator) {
+                flight.flightNumber = compact
+                confidenceBoost += 0.1
+                break
+            }
+        }
+        // Fall back to the first generic candidate only if nothing better exists
+        if flight.flightNumber.isEmpty, let first = flightNumberCandidates.first {
+            flight.flightNumber = first.replacingOccurrences(of: " ", with: "")
+        }
+
+        // Extract airport codes (3-letter IATA codes). Match against the
+        // original text — codes appear uppercase in booking emails, and
+        // uppercasing everything would turn every word into a candidate.
         let airportPattern = #"\b([A-Z]{3})\b"#
-        let airports = allMatches(in: text.uppercased(), pattern: airportPattern)
+        let airports = allMatches(in: text, pattern: airportPattern)
             .filter { isLikelyAirportCode($0) }
-        
+
         if airports.count >= 2 {
             flight.departureAirport = airports[0]
-            flight.arrivalAirport = airports[1]
+            // The departure code often repeats (header + details);
+            // the arrival is the first *different* code.
+            flight.arrivalAirport = airports.dropFirst().first { $0 != airports[0] } ?? airports[1]
             confidenceBoost += 0.15
         }
         
@@ -307,8 +413,12 @@ struct EmailParser {
         
         for brand in hotelBrands {
             if text.localizedCaseInsensitiveContains(brand) {
-                // Try to get full hotel name (brand + location)
-                if let fullName = firstMatch(in: text, pattern: "\(brand)[\\w\\s]*(?=[\\n,\\.])") {
+                // Capture the full name around the brand, staying on one
+                // line and stopping at punctuation ("Hotel Vier
+                // Jahreszeiten Kempinski", not just "Kempinski").
+                let escaped = NSRegularExpression.escapedPattern(for: brand)
+                let namePattern = "(?:[A-Za-z][A-Za-z '&\\-]{0,40})?" + escaped + "[A-Za-z0-9 '&\\-]{0,40}(?=[\\n,.]|$)"
+                if let fullName = firstMatch(in: text, pattern: namePattern) {
                     hotel.hotelName = fullName.trimmingCharacters(in: .whitespacesAndNewlines)
                 } else {
                     hotel.hotelName = brand
@@ -317,10 +427,10 @@ struct EmailParser {
                 break
             }
         }
-        
+
         // If no brand match, look for "Hotel" keyword
         if hotel.hotelName.isEmpty {
-            if let match = firstMatch(in: text, pattern: #"(?:Hotel|Inn|Resort|Lodge)\s+[\w\s]+(?=[\n,\.])"#) {
+            if let match = firstMatch(in: text, pattern: #"(?:Hotel|Inn|Resort|Lodge) [A-Za-z][A-Za-z0-9 '&\-]{1,40}(?=[\n,.]|$)"#) {
                 hotel.hotelName = match.trimmingCharacters(in: .whitespacesAndNewlines)
                 confidenceBoost += 0.1
             }
@@ -417,13 +527,13 @@ struct EmailParser {
         let combinedText = subject + "\n" + body
         
         // Check if it looks like it has flight info
-        let hasAirportCodes = allMatches(in: combinedText.uppercased(), pattern: #"\b([A-Z]{3})\b"#)
+        let hasAirportCodes = allMatches(in: combinedText, pattern: #"\b([A-Z]{3})\b"#)
             .filter { isLikelyAirportCode($0) }
             .count >= 2
-        let hasFlightNumber = firstMatch(in: combinedText, pattern: #"[A-Z]{2}\s?\d{1,4}"#) != nil
+        let hasFlightNumber = firstMatch(in: combinedText, pattern: #"\b[A-Z]{2}\s?\d{1,4}\b"#) != nil
         
         if hasAirportCodes || hasFlightNumber {
-            result.flights.append(parseFlightDetails(from: combinedText))
+            result.flights = parseFlights(from: combinedText)
         }
         
         // Check for hotel mentions
@@ -445,23 +555,33 @@ struct EmailParser {
             with: " ",
             options: .regularExpression
         )
-        // Normalize whitespace
+        // Collapse runs of spaces/tabs but keep line breaks — several
+        // extraction patterns rely on line structure to bound matches.
         cleaned = cleaned.replacingOccurrences(
-            of: "\\s+",
+            of: "[ \\t]+",
             with: " ",
+            options: .regularExpression
+        )
+        cleaned = cleaned.replacingOccurrences(
+            of: "\\n\\s*\\n+",
+            with: "\n",
             options: .regularExpression
         )
         return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
-    private static func firstMatch(in text: String, pattern: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return nil }
+
+    private static func firstMatch(
+        in text: String,
+        pattern: String,
+        options: NSRegularExpression.Options = []
+    ) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else { return nil }
         let range = NSRange(text.startIndex..., in: text)
         guard let match = regex.firstMatch(in: text, options: [], range: range) else { return nil }
         guard let matchRange = Range(match.range, in: text) else { return nil }
         return String(text[matchRange])
     }
-    
+
     private static func allMatches(in text: String, pattern: String) -> [String] {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
         let range = NSRange(text.startIndex..., in: text)
@@ -470,10 +590,23 @@ struct EmailParser {
             return String(text[matchRange])
         }
     }
+
+    /// All matches of a pattern along with their location in the text,
+    /// so results from several patterns can be merged in document order.
+    private static func allMatchRanges(in text: String, pattern: String) -> [(range: NSRange, value: String)] {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
+        let range = NSRange(text.startIndex..., in: text)
+        return regex.matches(in: text, options: [], range: range).compactMap {
+            guard let matchRange = Range($0.range, in: text) else { return nil }
+            return ($0.range, String(text[matchRange]))
+        }
+    }
     
+    /// Extracts dates in the order they appear in the text (booking emails
+    /// list events in itinerary order), attaching times to dates by their
+    /// document position. Sorting here would mis-pair overnight flights,
+    /// whose arrival time-of-day is earlier than the departure.
     private static func extractDates(from text: String) -> [Date] {
-        var dates: [Date] = []
-        
         let formatters: [(String, String)] = [
             // "Oct 12, 2025"
             (#"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b"#, "MMM d, yyyy"),
@@ -484,54 +617,73 @@ struct EmailParser {
             // "10/12/2025"
             (#"\b\d{2}/\d{2}/\d{4}\b"#, "MM/dd/yyyy"),
         ]
-        
+
+        // Collect matches from every format, then merge by position so the
+        // result reflects document order rather than pattern order.
+        var found: [(range: NSRange, date: Date)] = []
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US")
+
         for (pattern, format) in formatters {
-            let matches = allMatches(in: text, pattern: pattern)
-            let fmt = DateFormatter()
-            fmt.locale = Locale(identifier: "en_US")
             fmt.dateFormat = format
-            for match in matches {
-                let cleanMatch = match.replacingOccurrences(of: ",", with: "")
+            for (range, value) in allMatchRanges(in: text, pattern: pattern) {
+                let cleanMatch = value.replacingOccurrences(of: ",", with: "")
                 if let date = fmt.date(from: cleanMatch) {
-                    dates.append(date)
+                    found.append((range, date))
                 }
             }
         }
-        
-        // Also try time extraction for the found dates
-        let timePattern = #"\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)\b"#
-        let times = allMatches(in: text, pattern: timePattern)
-        
+
+        found.sort { $0.range.location < $1.range.location }
+
+        // Drop overlapping matches (the same substring matched by two patterns)
+        var dates: [Date] = []
+        var lastEnd = -1
+        for (range, date) in found {
+            guard range.location >= lastEnd else { continue }
+            dates.append(date)
+            lastEnd = range.location + range.length
+        }
+
+        // Attach times to dates by document position. Keep the whitespace
+        // before AM/PM on one line — \s would swallow the trailing newline
+        // and break DateFormatter parsing.
+        let timePattern = #"\b(\d{1,2}:\d{2}(?:[ \t]?(?:AM|PM|am|pm))?)\b"#
+        let times = allMatchRanges(in: text, pattern: timePattern)
+            .sorted { $0.range.location < $1.range.location }
+            .map(\.value)
+
         if !dates.isEmpty && !times.isEmpty {
             let timeFmt = DateFormatter()
             timeFmt.locale = Locale(identifier: "en_US")
-            
+            let cal = Calendar.current
+
             for (i, time) in times.prefix(dates.count).enumerated() {
-                let cleanTime = time.trimmingCharacters(in: .whitespaces)
-                timeFmt.dateFormat = cleanTime.contains("M") || cleanTime.contains("m") ? "h:mm a" : "HH:mm"
+                let cleanTime = time.trimmingCharacters(in: .whitespacesAndNewlines)
+                timeFmt.dateFormat = cleanTime.lowercased().contains("m") ? "h:mm a" : "HH:mm"
                 if let timeDate = timeFmt.date(from: cleanTime) {
-                    let cal = Calendar.current
                     let hour = cal.component(.hour, from: timeDate)
                     let minute = cal.component(.minute, from: timeDate)
-                    if i < dates.count {
-                        dates[i] = cal.date(bySettingHour: hour, minute: minute, second: 0, of: dates[i]) ?? dates[i]
-                    }
+                    dates[i] = cal.date(bySettingHour: hour, minute: minute, second: 0, of: dates[i]) ?? dates[i]
                 }
             }
         }
-        
-        return dates.sorted()
+
+        return dates
     }
-    
-    private static func extractConfirmationCode(from text: String) -> String? {
+
+    /// Also used by ICSParser on event descriptions.
+    static func extractConfirmationCode(from text: String) -> String? {
         // Common patterns: "Confirmation: ABC123", "Booking Ref: XYZ789", "PNR: ABCDE"
         let patterns = [
-            #"(?:confirmation|booking\s*(?:ref|reference|number|code)|pnr|record\s*locator|reservation)\s*(?:#|:|\s)\s*([A-Z0-9]{5,8})"#,
+            #"(?:confirmation|booking\s*(?:ref|reference|number|code)|pnr|record\s*locator|reservation)\s*(?:#|:|\s)\s*([A-Z0-9]{5,12})"#,
             #"(?:confirmation|booking)\s*(?:#|:)\s*(\d{6,12})"#,
         ]
-        
+
         for pattern in patterns {
-            if let match = firstMatch(in: text.uppercased(), pattern: pattern) {
+            // Text is uppercased so the keyword patterns need case-insensitive
+            // matching; the code itself stays [A-Z0-9].
+            if let match = firstMatch(in: text.uppercased(), pattern: pattern, options: .caseInsensitive) {
                 // Extract just the code part
                 let components = match.components(separatedBy: CharacterSet.alphanumerics.inverted)
                 if let code = components.last, code.count >= 5 {
@@ -539,7 +691,7 @@ struct EmailParser {
                 }
             }
         }
-        
+
         return nil
     }
     

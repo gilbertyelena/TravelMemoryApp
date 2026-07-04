@@ -18,28 +18,25 @@ struct PendingEmailProcessView: View {
     
     @State private var isProcessing = true
     @State private var parseResult: EmailParser.ParseResult?
-    @State private var createdTrip: Trip?
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.voyagerBackground.ignoresSafeArea()
-                
+
                 if isProcessing {
                     processingView
                 } else if let result = parseResult {
                     ParseResultView(
                         result: result,
-                        trip: createdTrip,
                         onAccept: {
+                            // Nothing was persisted during parsing —
+                            // commit only on explicit accept.
+                            let service = EmailIngestionService(modelContext: modelContext)
+                            service.commit(result, subject: email.subject, body: email.body, sender: email.sender)
                             onProcessed()
                         },
                         onDiscard: {
-                            // Delete the trip if discarded
-                            if let trip = createdTrip {
-                                modelContext.delete(trip)
-                                try? modelContext.save()
-                            }
                             onProcessed()
                         }
                     )
@@ -79,11 +76,11 @@ struct PendingEmailProcessView: View {
             
             VStack(spacing: 8) {
                 Text("Parsing Email...")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
                 Text(email.subject)
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
@@ -100,17 +97,13 @@ struct PendingEmailProcessView: View {
         Task {
             // Small delay for the animation
             try? await Task.sleep(nanoseconds: 800_000_000)
-            
-            let service = EmailIngestionService(modelContext: modelContext)
-            let trip = await service.ingestEmail(
+
+            self.parseResult = EmailIngestionService.parse(
                 subject: email.subject,
                 body: email.body,
                 sender: email.sender
             )
-            
-            self.parseResult = service.lastParseResult
-            self.createdTrip = trip
-            
+
             withAnimation {
                 self.isProcessing = false
             }

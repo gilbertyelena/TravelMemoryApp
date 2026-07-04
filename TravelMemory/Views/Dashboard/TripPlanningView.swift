@@ -95,11 +95,11 @@ struct TripPlanningView: View {
             
             VStack(spacing: 8) {
                 Text("No Trips Yet")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
                 Text("Forward a booking confirmation email\nto start building your itinerary")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
@@ -108,7 +108,7 @@ struct TripPlanningView: View {
             // Hint arrow pointing to the floating button
             VStack(spacing: 8) {
                 Text("TAP THE ENVELOPE BUTTON BELOW")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(1.0)
                     .foregroundStyle(Color.voyagerPrimary.opacity(0.6))
                 
@@ -173,7 +173,7 @@ struct TripPlanningView: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(subtitle)
@@ -197,11 +197,11 @@ struct TripPlanningView: View {
     private func tripHeader(for trip: Trip) -> some View {
         VStack(alignment: .leading, spacing: VoyagerSpacing.stackSmall) {
             Text(trip.destination.isEmpty ? trip.name : trip.destination)
-                .font(VoyagerFont.headlineLargeFallback)
+                .font(VoyagerFont.headlineLarge)
                 .foregroundStyle(Color.voyagerOnBackground)
             
             Text("\(trip.dateRangeText) • \(trip.durationDays) Day\(trip.durationDays == 1 ? "" : "s")")
-                .font(VoyagerFont.bodyLargeFallback)
+                .font(VoyagerFont.bodyLarge)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
             // Status
@@ -220,7 +220,7 @@ struct TripPlanningView: View {
                 .frame(height: 4)
                 
                 Text(trip.status.rawValue.uppercased())
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(0.6)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
@@ -285,7 +285,7 @@ struct TripPlanningView: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("No itinerary items yet")
-                                .font(VoyagerFont.bodySmallFallback)
+                                .font(VoyagerFont.bodySmall)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                             Text("Forward a confirmation email to add flights, hotels, and more")
                                 .font(.system(size: 11))
@@ -317,7 +317,7 @@ struct TripPlanningView: View {
             VStack(spacing: 4) {
                 VoyagerTimelineNode(isActive: isFirst)
                 Text(timeFmt.string(from: flight.departureTime))
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(0.5)
                     .foregroundStyle(isFirst ? Color.voyagerPrimary : Color.voyagerOnSurfaceVariant)
             }
@@ -329,14 +329,14 @@ struct TripPlanningView: View {
                         Image(systemName: "airplane.departure")
                             .foregroundStyle(Color.voyagerPrimary)
                         Text(flight.airlineAndFlight.uppercased())
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                     Spacer()
                     if !flight.gate.isEmpty {
                         Text("GATE \(flight.gate)")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.4)
                             .foregroundStyle(Color.voyagerOnSurface)
                             .padding(.horizontal, 8)
@@ -349,10 +349,10 @@ struct TripPlanningView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(flight.departureAirport)
-                            .font(VoyagerFont.headlineMediumFallback)
+                            .font(VoyagerFont.headlineMedium)
                             .foregroundStyle(Color.voyagerOnBackground)
                         Text(flight.departureCity)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                     
@@ -373,10 +373,10 @@ struct TripPlanningView: View {
                     
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(flight.arrivalAirport)
-                            .font(VoyagerFont.headlineMediumFallback)
+                            .font(VoyagerFont.headlineMedium)
                             .foregroundStyle(Color.voyagerOnBackground)
                         Text(flight.arrivalCity)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                 }
@@ -402,7 +402,7 @@ struct TripPlanningView: View {
             VStack(spacing: 4) {
                 VoyagerTimelineNode(isActive: false, size: 10)
                 Text(timeFmt.string(from: hotel.checkInDate))
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(0.5)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
@@ -430,17 +430,17 @@ struct TripPlanningView: View {
                         Text("CHECK-IN • \(hotel.nightsCount) NIGHT\(hotel.nightsCount == 1 ? "" : "S")")
                             .tracking(0.6)
                     }
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     
                     Text(hotel.hotelName)
-                        .font(VoyagerFont.bodyLargeFallback.bold())
+                        .font(VoyagerFont.bodyLarge.bold())
                         .foregroundStyle(Color.voyagerOnBackground)
                         .lineLimit(2)
                     
                     if !hotel.address.isEmpty {
                         Text(hotel.address)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                 }
@@ -461,7 +461,7 @@ struct TripPlanningView: View {
             VStack(spacing: 4) {
                 VoyagerTimelineNode(isActive: false, size: 10)
                 Text(timeFmt.string(from: car.pickupTime))
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(0.5)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
@@ -476,17 +476,17 @@ struct TripPlanningView: View {
                             Text("PICKUP")
                                 .tracking(0.6)
                         }
-                        .font(VoyagerFont.labelCapsFallback)
+                        .font(VoyagerFont.labelCaps)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                         
                         Text(car.company)
-                            .font(VoyagerFont.bodyLargeFallback.bold())
+                            .font(VoyagerFont.bodyLarge.bold())
                             .foregroundStyle(Color.voyagerOnBackground)
                     }
                     Spacer()
                     if car.isPrepaid {
                         Text("PRE-PAID")
-                            .font(VoyagerFont.labelCapsFallback)
+                            .font(VoyagerFont.labelCaps)
                             .tracking(0.4)
                             .foregroundStyle(Color.voyagerTertiary)
                             .padding(.horizontal, 8)
@@ -497,7 +497,7 @@ struct TripPlanningView: View {
                 }
                 
                 Text("\(car.vehicleType)\(!car.confirmationCode.isEmpty ? " • #\(car.confirmationCode)" : "")")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
             }
             .padding(VoyagerSpacing.stackMedium)

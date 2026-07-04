@@ -1,6 +1,6 @@
 //
 //  SharedDataStore.swift
-//  TravelMemory
+//  TravelMemory / ShareExtension (single file, member of both targets)
 //
 //  Shared data layer between the main app and Share Extension.
 //  Uses App Groups to pass email content from the extension
@@ -22,7 +22,7 @@ struct SharedDataStore {
     }
     
     /// A single email captured by the Share Extension
-    struct SharedEmail: Codable {
+    struct SharedEmail: Codable, Identifiable {
         var id: String = UUID().uuidString
         var subject: String
         var sender: String
@@ -44,7 +44,6 @@ struct SharedDataStore {
         
         if let data = try? JSONEncoder().encode(pending) {
             sharedDefaults?.set(data, forKey: Keys.pendingEmails)
-            sharedDefaults?.synchronize()
         }
     }
     
@@ -66,14 +65,12 @@ struct SharedDataStore {
         
         if let data = try? JSONEncoder().encode(pending) {
             sharedDefaults?.set(data, forKey: Keys.pendingEmails)
-            sharedDefaults?.synchronize()
         }
     }
     
     /// Clear all pending emails
     static func clearPendingEmails() {
         sharedDefaults?.removeObject(forKey: Keys.pendingEmails)
-        sharedDefaults?.synchronize()
     }
     
     /// Check if there are any pending emails to process

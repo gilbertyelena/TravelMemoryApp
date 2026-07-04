@@ -210,7 +210,7 @@ struct SpatialMemoryBridgeView: View {
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
             TextField("Search restaurants, activities...", text: $searchText)
-                .font(VoyagerFont.bodySmallFallback)
+                .font(VoyagerFont.bodySmall)
                 .foregroundStyle(Color.voyagerOnSurface)
                 .focused($searchFocused)
                 .onSubmit {
@@ -391,11 +391,11 @@ struct SpatialMemoryBridgeView: View {
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(pin.name)
-                        .font(VoyagerFont.bodyLargeFallback)
+                        .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(pin.dateRange)
-                        .font(VoyagerFont.bodySmallFallback)
+                        .font(VoyagerFont.bodySmall)
                         .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 }
                 
@@ -445,7 +445,7 @@ struct SpatialMemoryBridgeView: View {
                 .padding(.top, 8)
             
             Text("YOUR DESTINATIONS")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.2)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 .padding(.horizontal, 4)
@@ -463,11 +463,11 @@ struct SpatialMemoryBridgeView: View {
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(trip.destination)
-                            .font(VoyagerFont.bodyLargeFallback)
+                            .font(VoyagerFont.bodyLarge)
                             .fontWeight(.medium)
                             .foregroundStyle(Color.voyagerOnSurface)
                         Text(trip.dateRangeText)
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
                     
@@ -534,7 +534,7 @@ struct SpatialMemoryBridgeView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Color.voyagerTertiary)
                 Text("\(searchCategory.uppercased()) NEARBY")
-                    .font(VoyagerFont.labelCapsFallback)
+                    .font(VoyagerFont.labelCaps)
                     .tracking(1.0)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 
@@ -575,7 +575,7 @@ struct SpatialMemoryBridgeView: View {
                             
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(place.name)
-                                    .font(VoyagerFont.bodySmallFallback)
+                                    .font(VoyagerFont.bodySmall)
                                     .fontWeight(.medium)
                                     .foregroundStyle(Color.voyagerOnSurface)
                                     .lineLimit(1)
@@ -733,12 +733,15 @@ struct SpatialMemoryBridgeView: View {
             .ignoresSafeArea()
             
             // Subtle decorative grid
-            ForEach(0..<8, id: \.self) { i in
-                Rectangle()
-                    .fill(Color.voyagerSurfaceContainerHigh.opacity(0.08))
-                    .frame(width: 1, height: UIScreen.main.bounds.height)
-                    .offset(x: CGFloat(i) * 55 - 200)
-                    .rotationEffect(.degrees(Double(i % 2 == 0 ? 15 : -10)))
+            GeometryReader { geo in
+                ForEach(0..<8, id: \.self) { i in
+                    Rectangle()
+                        .fill(Color.voyagerSurfaceContainerHigh.opacity(0.08))
+                        .frame(width: 1, height: geo.size.height)
+                        .offset(x: CGFloat(i) * 55 - 200)
+                        .rotationEffect(.degrees(Double(i % 2 == 0 ? 15 : -10)))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
@@ -759,10 +762,10 @@ struct SpatialMemoryBridgeView: View {
             
             VStack(spacing: 8) {
                 Text("No Destinations Yet")
-                    .font(VoyagerFont.headlineMediumFallback)
+                    .font(VoyagerFont.headlineMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Text("Your trip destinations will appear\non the map as you add them")
-                    .font(VoyagerFont.bodySmallFallback)
+                    .font(VoyagerFont.bodySmall)
                     .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)

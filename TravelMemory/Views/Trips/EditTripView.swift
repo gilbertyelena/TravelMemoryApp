@@ -97,7 +97,7 @@ struct EditTripView: View {
                 
                 ScrollView {
                     VStack(spacing: VoyagerSpacing.stackLarge) {
-                        formField(title: "TRIP NAME", placeholder: "Munich Getaway", text: $name)
+                        VoyagerFormField(title: "TRIP NAME", placeholder: "Munich Getaway", text: $name)
                         
                         // Destination with autocomplete
                         destinationField
@@ -147,7 +147,7 @@ struct EditTripView: View {
     private var travelDatesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("TRAVEL DATES")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
@@ -166,7 +166,7 @@ struct EditTripView: View {
                             .tracking(0.8)
                             .foregroundStyle(datePhase == .start && showCalendar ? Color.voyagerPrimaryAccent : Color.voyagerOnSurfaceVariant)
                         Text(displayFmt.string(from: startDate))
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .fontWeight(.medium)
                             .foregroundStyle(Color.voyagerOnSurface)
                     }
@@ -207,7 +207,7 @@ struct EditTripView: View {
                             .tracking(0.8)
                             .foregroundStyle(datePhase == .end && showCalendar ? Color.voyagerPrimaryAccent : Color.voyagerOnSurfaceVariant)
                         Text(displayFmt.string(from: endDate))
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .fontWeight(.medium)
                             .foregroundStyle(Color.voyagerOnSurface)
                     }
@@ -240,7 +240,7 @@ struct EditTripView: View {
                             .fill(Color.voyagerPrimaryAccent)
                             .frame(width: 6, height: 6)
                         Text(datePhase == .start ? "Tap departure date, then return date" : "Now tap your return date")
-                            .font(VoyagerFont.bodySmallFallback)
+                            .font(VoyagerFont.bodySmall)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                         Spacer()
                         
@@ -294,12 +294,12 @@ struct EditTripView: View {
     private var destinationField: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("DESTINATION")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
             
             TextField("Search city or country...", text: $destination)
-                .font(VoyagerFont.bodyLargeFallback)
+                .font(VoyagerFont.bodyLarge)
                 .foregroundStyle(Color.voyagerOnSurface)
                 .padding(14)
                 .background(Color.voyagerInputBackground)
@@ -340,7 +340,7 @@ struct EditTripView: View {
                                 
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(suggestion.title)
-                                        .font(VoyagerFont.bodySmallFallback)
+                                        .font(VoyagerFont.bodySmall)
                                         .fontWeight(.medium)
                                         .foregroundStyle(Color.voyagerOnSurface)
                                     
@@ -408,29 +408,11 @@ struct EditTripView: View {
             trip.startDate = startDate
             trip.endDate = endDate
         }
-        try? modelContext.save()
+        modelContext.saveOrLog()
         dismiss()
     }
     
     // MARK: - Form Helpers
     
-    private func formField(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(VoyagerFont.labelCapsFallback)
-                .tracking(1.0)
-                .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            TextField(placeholder, text: text)
-                .font(VoyagerFont.bodyLargeFallback)
-                .foregroundStyle(Color.voyagerOnSurface)
-                .padding(14)
-                .background(Color.voyagerInputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
-                .overlay(
-                    RoundedRectangle(cornerRadius: VoyagerRadius.medium)
-                        .stroke(Color.voyagerInputBorder, lineWidth: 1)
-                )
-        }
-    }
 }
 

@@ -118,14 +118,6 @@ struct VoyagerFont {
     
     /// Inter 15px Medium — medium weight body
     static let bodyMedium: Font = .custom("Inter-Medium", size: 15, relativeTo: .subheadline)
-    
-    // Fallback system fonts (used in current code — will auto-upgrade
-    // once fonts are added to Xcode target)
-    static let headlineLargeFallback: Font = .custom("PlusJakartaSans-Bold", size: 34, relativeTo: .largeTitle)
-    static let headlineMediumFallback: Font = .custom("PlusJakartaSans-Bold", size: 22, relativeTo: .title2)
-    static let bodyLargeFallback: Font = .custom("Inter-Regular", size: 17, relativeTo: .body)
-    static let bodySmallFallback: Font = .custom("Inter-Regular", size: 15, relativeTo: .subheadline)
-    static let labelCapsFallback: Font = .custom("Inter-SemiBold", size: 12, relativeTo: .caption)
 }
 
 // MARK: - Spacing Tokens
@@ -202,7 +194,7 @@ extension View {
 struct VoyagerPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(VoyagerFont.labelCapsFallback)
+            .font(VoyagerFont.labelCaps)
             .tracking(0.6)
             .textCase(.uppercase)
             .foregroundStyle(.white)
@@ -224,7 +216,7 @@ struct VoyagerNotificationPill: View {
     
     var body: some View {
         Text(text)
-            .font(VoyagerFont.labelCapsFallback)
+            .font(VoyagerFont.labelCaps)
             .tracking(0.5)
             .textCase(.uppercase)
             .foregroundStyle(.black)
@@ -276,7 +268,7 @@ struct VoyagerOfflineBadge: View {
             Image(systemName: "checkmark.icloud")
                 .font(.system(size: 10))
             Text("OFFLINE AVAILABLE")
-                .font(VoyagerFont.labelCapsFallback)
+                .font(VoyagerFont.labelCaps)
                 .tracking(0.8)
         }
         .foregroundStyle(Color.voyagerPrimaryAccent)
@@ -324,7 +316,9 @@ struct DestinationGradient {
             return [Color(hex: "#4FACFE"), Color(hex: "#00F2FE")]
         }
         
-        // Default — pick from a set based on a stable hash of the name
+        // Default — pick from a set based on a stable hash of the name.
+        // Swift's String.hash is seeded per process, so it would change
+        // the gradient on every app launch; sum scalars instead.
         let gradients: [[Color]] = [
             [Color(hex: "#4FACFE"), Color(hex: "#00F2FE")],
             [Color(hex: "#43E97B"), Color(hex: "#38F9D7")],
@@ -333,8 +327,8 @@ struct DestinationGradient {
             [Color(hex: "#667EEA"), Color(hex: "#764BA2")],
             [Color(hex: "#FF9A9E"), Color(hex: "#FECFEF")],
         ]
-        let hash = abs(destination.hash)
-        return gradients[hash % gradients.count]
+        let stableHash = destination.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0x7FFFFFFF }
+        return gradients[stableHash % gradients.count]
     }
 }
 
@@ -440,23 +434,25 @@ extension View {
 
 struct ShimmerEffect: ViewModifier {
     @State private var phase: CGFloat = 0
-    
+
     func body(content: Content) -> some View {
         content
             .overlay(
-                LinearGradient(
-                    colors: [
-                        .clear,
-                        Color.white.opacity(0.1),
-                        .clear
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .offset(x: phase)
-                .onAppear {
-                    withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
-                        phase = UIScreen.main.bounds.width
+                GeometryReader { geo in
+                    LinearGradient(
+                        colors: [
+                            .clear,
+                            Color.white.opacity(0.1),
+                            .clear
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .offset(x: phase * geo.size.width)
+                    .onAppear {
+                        withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
+                            phase = 1
+                        }
                     }
                 }
             )
