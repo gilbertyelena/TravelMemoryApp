@@ -24,6 +24,9 @@ struct EditCarView: View {
     @State private var pickupLocation: String = ""
     @State private var dropoffLocation: String = ""
     @State private var confirmationCode: String = ""
+    @State private var itemStatus: ItineraryItemStatus = .booked
+    @State private var costText = ""
+    @State private var currencyText = ""
     @State private var isPrepaid: Bool = false
     @State private var showDeleteConfirm = false
     
@@ -43,7 +46,11 @@ struct EditCarView: View {
                         VoyagerDateField(title: "DROP-OFF", date: $dropoffTime)
                         VoyagerFormField(title: "DROP-OFF LOCATION", placeholder: "Airport Terminal 2", text: $dropoffLocation)
                         
+                        VoyagerStatusPicker(status: $itemStatus)
+
                         VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "SX884920", text: $confirmationCode)
+
+                        VoyagerCostField(costText: $costText, currencyCode: $currencyText)
                         
                         // Pre-paid toggle
                         VStack(alignment: .leading, spacing: 6) {
@@ -120,6 +127,9 @@ struct EditCarView: View {
         pickupLocation = car.pickupLocation
         dropoffLocation = car.dropoffLocation
         confirmationCode = car.confirmationCode
+        itemStatus = car.status
+        costText = VoyagerCostField.format(car.cost)
+        currencyText = car.currencyCode
         isPrepaid = car.isPrepaid
     }
     
@@ -132,6 +142,9 @@ struct EditCarView: View {
         car.pickupLocation = pickupLocation
         car.dropoffLocation = dropoffLocation
         car.confirmationCode = confirmationCode.uppercased()
+        car.status = itemStatus
+        car.cost = VoyagerCostField.parse(costText)
+        car.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         car.isPrepaid = isPrepaid
         modelContext.saveOrLog()
         dismiss()

@@ -76,19 +76,93 @@ final class Trip: Hashable {
     var pendingReviewCount: Int {
         parsedEmails.filter { $0.status == .needsReview }.count
     }
+
+    /// Costs summed per currency ("" groups with the device currency symbol)
+    var costTotals: [(currency: String, total: Double)] {
+        var totals: [String: Double] = [:]
+        for item in timelineItems where item.cost > 0 {
+            totals[item.currencyCode.uppercased(), default: 0] += item.cost
+        }
+        return totals.sorted { $0.key < $1.key }.map { (currency: $0.key, total: $0.value) }
+    }
+
+    /// "£450 + €230" style summary, empty when no costs are recorded
+    var budgetText: String {
+        costTotals.map { entry in
+            let symbol = Self.currencySymbol(for: entry.currency)
+            let amount = entry.total.truncatingRemainder(dividingBy: 1) == 0
+                ? String(format: "%.0f", entry.total)
+                : String(format: "%.2f", entry.total)
+            return "\(symbol)\(amount)"
+        }.joined(separator: " + ")
+    }
+
+    static func currencySymbol(for code: String) -> String {
+        switch code.uppercased() {
+        case "": return Locale.current.currencySymbol ?? "¤"
+        case "GBP": return "£"
+        case "EUR": return "€"
+        case "USD": return "$"
+        case "JPY": return "¥"
+        case "CHF": return "CHF "
+        default: return code.uppercased() + " "
+        }
+    }
 }
 
 enum TripStatus: String, Codable, CaseIterable {
     case planning, live, completed
 }
 
+// MARK: - Item Status (idea → planned → booked)
+
+/// Lifecycle of an itinerary item, so the app can hold plans and
+/// candidates ("maybe dinner here?") — not just confirmed bookings.
+enum ItineraryItemStatus: String, Codable, CaseIterable {
+    case idea, planned, booked
+
+    var label: String {
+        switch self {
+        case .idea: return "Idea"
+        case .planned: return "Planned"
+        case .booked: return "Booked"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .idea: return "lightbulb"
+        case .planned: return "calendar.badge.clock"
+        case .booked: return "checkmark.seal.fill"
+        }
+    }
+
+    var colorHex: String {
+        switch self {
+        case .idea: return "#8B91A0"
+        case .planned: return "#FFB868"
+        case .booked: return "#38EF7D"
+        }
+    }
+}
+
 // MARK: - Itinerary Item Protocol
 
-protocol ItineraryItem {
+protocol ItineraryItem: AnyObject {
     var eventDate: Date { get }
     var itemType: ItineraryItemType { get }
     var confidence: Double { get }
     var confirmationCode: String { get }
+    var statusRaw: String { get set }
+    var cost: Double { get set }
+    var currencyCode: String { get set }
+}
+
+extension ItineraryItem {
+    var status: ItineraryItemStatus {
+        get { ItineraryItemStatus(rawValue: statusRaw) ?? .booked }
+        set { statusRaw = newValue.rawValue }
+    }
 }
 
 enum ItineraryItemType: String, Codable {
@@ -133,6 +207,10 @@ final class FlightSegment: ItineraryItem {
     var terminal: String
     var confirmationCode: String
     var confidence: Double
+    // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
+    var statusRaw: String = ItineraryItemStatus.booked.rawValue
+    var cost: Double = 0
+    var currencyCode: String = ""
     
     var trip: Trip?
     
@@ -190,6 +268,10 @@ final class HotelBooking: ItineraryItem {
     var confirmationCode: String
     var roomType: String
     var confidence: Double
+    // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
+    var statusRaw: String = ItineraryItemStatus.booked.rawValue
+    var cost: Double = 0
+    var currencyCode: String = ""
     
     var trip: Trip?
     
@@ -233,6 +315,10 @@ final class CarRentalBooking: ItineraryItem {
     var confirmationCode: String
     var isPrepaid: Bool
     var confidence: Double
+    // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
+    var statusRaw: String = ItineraryItemStatus.booked.rawValue
+    var cost: Double = 0
+    var currencyCode: String = ""
     
     var trip: Trip?
     
@@ -274,6 +360,10 @@ final class DiningReservation: ItineraryItem {
     var confirmationCode: String
     var notes: String
     var confidence: Double
+    // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
+    var statusRaw: String = ItineraryItemStatus.booked.rawValue
+    var cost: Double = 0
+    var currencyCode: String = ""
     
     var trip: Trip?
     
@@ -351,6 +441,10 @@ final class TripActivity: ItineraryItem {
     var notes: String
     var priceInfo: String
     var confidence: Double
+    // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
+    var statusRaw: String = ItineraryItemStatus.booked.rawValue
+    var cost: Double = 0
+    var currencyCode: String = ""
     
     var trip: Trip?
     

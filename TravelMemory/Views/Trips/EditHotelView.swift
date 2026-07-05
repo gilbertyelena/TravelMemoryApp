@@ -24,6 +24,9 @@ struct EditHotelView: View {
     @State private var checkInDate = Date()
     @State private var checkOutDate = Date()
     @State private var confirmationCode = ""
+    @State private var itemStatus: ItineraryItemStatus = .booked
+    @State private var costText = ""
+    @State private var currencyText = ""
     @State private var roomType = ""
     @State private var latitude: Double?
     @State private var longitude: Double?
@@ -54,7 +57,11 @@ struct EditHotelView: View {
                         VoyagerFormField(title: "ROOM TYPE", placeholder: "Deluxe King", text: $roomType)
                         VoyagerDateField(title: "CHECK-IN", date: $checkInDate, displayedComponents: .date)
                         VoyagerDateField(title: "CHECK-OUT", date: $checkOutDate, displayedComponents: .date)
+                        VoyagerStatusPicker(status: $itemStatus)
+
                         VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "KMP884920", text: $confirmationCode)
+
+                        VoyagerCostField(costText: $costText, currencyCode: $currencyText)
                         
                         Button { save() } label: { Text("SAVE") }
                             .buttonStyle(VoyagerPrimaryButtonStyle())
@@ -385,6 +392,9 @@ struct EditHotelView: View {
         checkInDate = hotel.checkInDate
         checkOutDate = hotel.checkOutDate
         confirmationCode = hotel.confirmationCode
+        itemStatus = hotel.status
+        costText = VoyagerCostField.format(hotel.cost)
+        currencyText = hotel.currencyCode
         roomType = hotel.roomType
         // Pre-fill city from trip destination
         if let trip = hotel.trip, searchCity.isEmpty {
@@ -399,6 +409,9 @@ struct EditHotelView: View {
         hotel.checkInDate = checkInDate
         hotel.checkOutDate = checkOutDate
         hotel.confirmationCode = confirmationCode.uppercased()
+        hotel.status = itemStatus
+        hotel.cost = VoyagerCostField.parse(costText)
+        hotel.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         hotel.roomType = roomType
         modelContext.saveOrLog()
         dismiss()

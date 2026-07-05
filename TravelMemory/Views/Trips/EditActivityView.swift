@@ -25,6 +25,9 @@ struct EditActivityView: View {
     @State private var startTime = Date()
     @State private var endTime = Date()
     @State private var confirmationCode = ""
+    @State private var itemStatus: ItineraryItemStatus = .booked
+    @State private var costText = ""
+    @State private var currencyText = ""
     @State private var notes = ""
     @State private var priceInfo = ""
     @State private var showDeleteConfirm = false
@@ -63,7 +66,11 @@ struct EditActivityView: View {
                         VoyagerDateField(title: "END TIME", date: $endTime)
                         
                         HStack(spacing: 10) {
-                            VoyagerFormField(title: "CONFIRMATION", placeholder: "Ref code", text: $confirmationCode)
+                            VoyagerStatusPicker(status: $itemStatus)
+
+                        VoyagerFormField(title: "CONFIRMATION", placeholder: "Ref code", text: $confirmationCode)
+
+                        VoyagerCostField(costText: $costText, currencyCode: $currencyText)
                             VoyagerFormField(title: "PRICE", placeholder: "€85pp", text: $priceInfo)
                         }
                         
@@ -170,6 +177,9 @@ struct EditActivityView: View {
         startTime = activity.startTime
         endTime = activity.endTime
         confirmationCode = activity.confirmationCode
+        itemStatus = activity.status
+        costText = VoyagerCostField.format(activity.cost)
+        currencyText = activity.currencyCode
         notes = activity.notes
         priceInfo = activity.priceInfo
     }
@@ -183,6 +193,9 @@ struct EditActivityView: View {
         activity.startTime = startTime
         activity.endTime = endTime
         activity.confirmationCode = confirmationCode
+        activity.status = itemStatus
+        activity.cost = VoyagerCostField.parse(costText)
+        activity.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         activity.notes = notes
         activity.priceInfo = priceInfo
         modelContext.saveOrLog()

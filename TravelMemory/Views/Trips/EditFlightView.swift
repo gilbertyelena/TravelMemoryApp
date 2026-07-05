@@ -32,6 +32,9 @@ struct EditFlightView: View {
     @State private var seat: String = ""
     @State private var terminal: String = ""
     @State private var confirmationCode: String = ""
+    @State private var itemStatus: ItineraryItemStatus = .booked
+    @State private var costText = ""
+    @State private var currencyText = ""
     @State private var showDeleteConfirm = false
     
     // Search state
@@ -104,7 +107,11 @@ struct EditFlightView: View {
                             VoyagerFormField(title: "TERMINAL", placeholder: "1", text: $terminal)
                         }
                         
+                        VoyagerStatusPicker(status: $itemStatus)
+
                         VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "ABCX7K", text: $confirmationCode)
+
+                        VoyagerCostField(costText: $costText, currencyCode: $currencyText)
                         
                         Button { save() } label: { Text("SAVE") }
                             .buttonStyle(VoyagerPrimaryButtonStyle())
@@ -318,6 +325,9 @@ struct EditFlightView: View {
         seat = flight.seat
         terminal = flight.terminal
         confirmationCode = flight.confirmationCode
+        itemStatus = flight.status
+        costText = VoyagerCostField.format(flight.cost)
+        currencyText = flight.currencyCode
     }
     
     private func applyChanges() {
@@ -333,6 +343,9 @@ struct EditFlightView: View {
         flight.seat = seat
         flight.terminal = terminal
         flight.confirmationCode = confirmationCode.uppercased()
+        flight.status = itemStatus
+        flight.cost = VoyagerCostField.parse(costText)
+        flight.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         modelContext.saveOrLog()
         isFinalized = true
     }

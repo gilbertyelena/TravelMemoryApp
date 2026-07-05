@@ -249,6 +249,16 @@ struct TripDetailView: View {
             Text("\(trip.dateRangeText) • \(trip.durationDays) Day\(trip.durationDays == 1 ? "" : "s")")
                 .font(VoyagerFont.bodyLarge)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
+
+            if !trip.budgetText.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "creditcard")
+                        .font(.system(size: 12))
+                    Text(trip.budgetText)
+                        .font(VoyagerFont.bodyMedium)
+                }
+                .foregroundStyle(Color.voyagerTertiary)
+            }
             
             // Status pills
             HStack(spacing: 12) {
@@ -381,6 +391,7 @@ struct TripDetailView: View {
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
+                    ItemStatusBadge(status: flight.status)
                     Spacer()
                     Text(timeFmt.string(from: flight.departureTime))
                         .font(.system(size: 13, weight: .medium, design: .monospaced))
@@ -457,6 +468,7 @@ struct TripDetailView: View {
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
+                    ItemStatusBadge(status: hotel.status)
                     Spacer()
                 }
                 
@@ -508,6 +520,7 @@ struct TripDetailView: View {
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
+                    ItemStatusBadge(status: car.status)
                     Spacer()
                     if car.isPrepaid {
                         Text("PRE-PAID")
@@ -564,6 +577,7 @@ struct TripDetailView: View {
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
+                    ItemStatusBadge(status: dining.status)
                     Spacer()
                     Text(timeFmt.string(from: dining.reservationTime))
                         .font(.system(size: 13, weight: .medium, design: .monospaced))
@@ -634,6 +648,7 @@ struct TripDetailView: View {
                             .tracking(0.6)
                             .foregroundStyle(Color.voyagerOnSurfaceVariant)
                     }
+                    ItemStatusBadge(status: activity.status)
                     Spacer()
                     Text(timeFmt.string(from: activity.startTime))
                         .font(.system(size: 13, weight: .medium, design: .monospaced))

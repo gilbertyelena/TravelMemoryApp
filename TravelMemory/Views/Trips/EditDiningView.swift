@@ -31,6 +31,9 @@ struct EditDiningView: View {
     @State private var reservationTime = Date()
     @State private var partySize = 2
     @State private var confirmationCode = ""
+    @State private var itemStatus: ItineraryItemStatus = .booked
+    @State private var costText = ""
+    @State private var currencyText = ""
     @State private var notes = ""
     @State private var showDeleteConfirm = false
     @State private var showMapBrowser = false
@@ -60,7 +63,11 @@ struct EditDiningView: View {
                         // Party size stepper
                         partySizeSection
                         
+                        VoyagerStatusPicker(status: $itemStatus)
+
                         VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "Optional", text: $confirmationCode)
+
+                        VoyagerCostField(costText: $costText, currencyCode: $currencyText)
                         
                         VStack(alignment: .leading, spacing: 6) {
                             Text("NOTES")
@@ -386,6 +393,9 @@ struct EditDiningView: View {
         reservationTime = reservation.reservationTime
         partySize = reservation.partySize
         confirmationCode = reservation.confirmationCode
+        itemStatus = reservation.status
+        costText = VoyagerCostField.format(reservation.cost)
+        currencyText = reservation.currencyCode
         notes = reservation.notes
     }
     
@@ -396,6 +406,9 @@ struct EditDiningView: View {
         reservation.reservationTime = reservationTime
         reservation.partySize = partySize
         reservation.confirmationCode = confirmationCode
+        reservation.status = itemStatus
+        reservation.cost = VoyagerCostField.parse(costText)
+        reservation.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         reservation.notes = notes
         modelContext.saveOrLog()
         dismiss()
