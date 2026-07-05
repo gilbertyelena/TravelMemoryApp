@@ -97,6 +97,12 @@ struct TripDetailView: View {
                         unifiedTimeline
                     }
                     
+                    // Free evenings — nudge toward dinner plans
+                    if trip.status != .completed && !freeEvenings.isEmpty && !timelineEntries.isEmpty {
+                        freeEveningsSection
+                            .padding(.horizontal, VoyagerSpacing.marginMain)
+                    }
+
                     // Packing List
                     packingSection
                         .padding(.horizontal, VoyagerSpacing.marginMain)
@@ -228,6 +234,76 @@ struct TripDetailView: View {
         }
     }
     
+    // MARK: - Free Evenings
+
+    /// Trip days with no dining plans yet
+    private var freeEvenings: [Date] {
+        let cal = Calendar.current
+        let diningDays = Set(trip.dining.map { cal.startOfDay(for: $0.reservationTime) })
+        var days: [Date] = []
+        var day = cal.startOfDay(for: trip.startDate)
+        let end = cal.startOfDay(for: trip.endDate)
+        var guardCounter = 0
+        while day <= end && guardCounter < 60 {
+            if !diningDays.contains(day) { days.append(day) }
+            guard let next = cal.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+            guardCounter += 1
+        }
+        return days
+    }
+
+    private var freeEveningsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "fork.knife")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: "#FFB868"))
+                Text("EVENINGS WITHOUT DINNER PLANS")
+                    .font(VoyagerFont.labelCaps)
+                    .tracking(1.0)
+                    .foregroundStyle(Color.voyagerOnSurfaceVariant)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(freeEvenings.prefix(10), id: \.self) { day in
+                        Button {
+                            planDinner(on: day)
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "plus.circle")
+                                    .font(.system(size: 11))
+                                Text(dayFmt.string(from: day))
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundStyle(Color(hex: "#FFB868"))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(hex: "#FFB868").opacity(0.1))
+                            .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .voyagerCard()
+    }
+
+    /// Creates a dinner draft for the chosen evening and opens the editor
+    /// (with its restaurant search and map browser).
+    private func planDinner(on day: Date) {
+        let evening = Calendar.current.date(bySettingHour: 19, minute: 30, second: 0, of: day) ?? day
+        let dining = DiningReservation(reservationTime: evening)
+        dining.status = .idea
+        dining.trip = trip
+        modelContext.insert(dining)
+        newItemIDs.insert(dining.id)
+        editingDining = dining
+    }
+
     // MARK: - Trip Header
     
     private var tripHeader: some View {

@@ -31,6 +31,8 @@ struct EditDiningView: View {
     @State private var reservationTime = Date()
     @State private var partySize = 2
     @State private var confirmationCode = ""
+    @State private var phone = ""
+    @State private var websiteURL = ""
     @State private var itemStatus: ItineraryItemStatus = .booked
     @State private var costText = ""
     @State private var currencyText = ""
@@ -55,6 +57,8 @@ struct EditDiningView: View {
                     VStack(spacing: VoyagerSpacing.stackLarge) {
                         // Restaurant name with search
                         restaurantNameSection
+
+                        bookingHandoffRow
                         
                         VoyagerFormField(title: "ADDRESS", placeholder: "Full address", text: $address)
                         
@@ -127,7 +131,10 @@ struct EditDiningView: View {
                     destination: reservation.trip?.destination ?? "",
                     accommodationName: reservation.trip?.hotels.first?.hotelName ?? "",
                     accommodationAddress: reservation.trip?.hotels.first?.address ?? "",
-                    searchManager: searchManager
+                    searchManager: searchManager,
+                    onShortlist: reservation.trip == nil ? nil : { item in
+                        addToShortlist(item)
+                    }
                 ) { mapItem in
                     selectRestaurant(mapItem)
                 }
@@ -296,6 +303,60 @@ struct EditDiningView: View {
         }
     }
     
+    // MARK: - Booking Handoff
+
+    /// One-tap paths to actually book: call, website, or a Google search.
+    @ViewBuilder
+    private var bookingHandoffRow: some View {
+        if !restaurantName.isEmpty {
+            HStack(spacing: 10) {
+                if !phone.isEmpty {
+                    handoffButton(icon: "phone.fill", label: "CALL") {
+                        let digits = phone.filter { !$0.isWhitespace }
+                        if let url = URL(string: "tel:\(digits)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }
+
+                if !websiteURL.isEmpty {
+                    handoffButton(icon: "globe", label: "WEBSITE") {
+                        if let url = URL(string: websiteURL) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }
+
+                handoffButton(icon: "magnifyingglass", label: "BOOK ONLINE") {
+                    let query = "\(restaurantName) \(reservation.trip?.destination ?? "") reservation"
+                        .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                    if let url = URL(string: "https://www.google.com/search?q=\(query)") {
+                        UIApplication.shared.open(url)
+                    }
+                }
+
+                Spacer()
+            }
+        }
+    }
+
+    private func handoffButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                Text(label)
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.5)
+            }
+            .foregroundStyle(Color.voyagerPrimary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(Color.voyagerPrimary.opacity(0.1))
+            .clipShape(Capsule())
+        }
+    }
+
     // MARK: - Party Size
     
     private var partySizeSection: some View {
@@ -376,7 +437,27 @@ struct EditDiningView: View {
     private func selectRestaurant(_ item: MKMapItem) {
         restaurantName = item.name ?? ""
         address = item.placemark.formattedAddress ?? ""
+        phone = item.phoneNumber ?? ""
+        websiteURL = item.url?.absoluteString ?? ""
         searchManager.clear()
+    }
+
+    /// Creates an idea-status reservation from a browsed restaurant so
+    /// candidates can be collected without leaving the map.
+    private func addToShortlist(_ item: MKMapItem) {
+        guard let trip = reservation.trip else { return }
+        let evening = Calendar.current.date(bySettingHour: 19, minute: 30, second: 0, of: trip.startDate) ?? trip.startDate
+        let idea = DiningReservation(
+            restaurantName: item.name ?? "Restaurant",
+            address: item.placemark.formattedAddress ?? "",
+            reservationTime: evening,
+            phone: item.phoneNumber ?? "",
+            websiteURL: item.url?.absoluteString ?? ""
+        )
+        idea.status = .idea
+        idea.trip = trip
+        modelContext.insert(idea)
+        modelContext.saveOrLog()
     }
 
     /// "650 m" / "2.4 km" style label
@@ -393,6 +474,8 @@ struct EditDiningView: View {
         reservationTime = reservation.reservationTime
         partySize = reservation.partySize
         confirmationCode = reservation.confirmationCode
+        phone = reservation.phone
+        websiteURL = reservation.websiteURL
         itemStatus = reservation.status
         costText = VoyagerCostField.format(reservation.cost)
         currencyText = reservation.currencyCode
@@ -406,6 +489,8 @@ struct EditDiningView: View {
         reservation.reservationTime = reservationTime
         reservation.partySize = partySize
         reservation.confirmationCode = confirmationCode
+        reservation.phone = phone
+        reservation.websiteURL = websiteURL
         reservation.status = itemStatus
         reservation.cost = VoyagerCostField.parse(costText)
         reservation.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
@@ -484,6 +569,7 @@ struct RestaurantMapBrowser: View {
     let accommodationName: String
     let accommodationAddress: String
     @ObservedObject var searchManager: PlaceSearchManager
+    var onShortlist: ((MKMapItem) -> Void)? = nil
     let onSelect: (MKMapItem) -> Void
     
     @Environment(\.dismiss) private var dismiss
@@ -501,6 +587,7 @@ struct RestaurantMapBrowser: View {
     @State private var stayName: String = ""
     /// Where the last area search ran — panning far from it re-searches.
     @State private var lastSearchedCenter: CLLocationCoordinate2D?
+    @State private var shortlistedName: String?
     
     var body: some View {
         NavigationStack {
@@ -557,7 +644,23 @@ struct RestaurantMapBrowser: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal, 12)
                     .padding(.top, 8)
-                    
+
+                    if let name = shortlistedName {
+                        HStack(spacing: 6) {
+                            Image(systemName: "lightbulb.fill")
+                                .font(.system(size: 12))
+                            Text("\(name) saved to ideas")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.voyagerPrimaryAccent.opacity(0.9))
+                        .clipShape(Capsule())
+                        .padding(.top, 6)
+                        .transition(.opacity)
+                    }
+
                     Spacer()
                 }
                 
@@ -683,6 +786,35 @@ struct RestaurantMapBrowser: View {
             }
             
             HStack(spacing: 10) {
+                // Shortlist as an idea, keep browsing
+                if let onShortlist {
+                    Button {
+                        onShortlist(item)
+                        shortlistedName = item.name ?? "Restaurant"
+                        withAnimation { selectedItem = nil }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            shortlistedName = nil
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "lightbulb")
+                                .font(.system(size: 14))
+                            Text("IDEA")
+                                .font(.system(size: 13, weight: .bold))
+                                .tracking(0.6)
+                        }
+                        .foregroundStyle(Color.voyagerPrimary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(Color.voyagerPrimary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.voyagerPrimary.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                }
+
                 // Select button
                 Button {
                     onSelect(item)

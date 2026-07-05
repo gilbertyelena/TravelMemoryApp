@@ -359,6 +359,9 @@ final class DiningReservation: ItineraryItem {
     var partySize: Int
     var confirmationCode: String
     var notes: String
+    // Contact details captured from map search, for one-tap booking handoff
+    var phone: String = ""
+    var websiteURL: String = ""
     var confidence: Double
     // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
@@ -374,6 +377,8 @@ final class DiningReservation: ItineraryItem {
         partySize: Int = 2,
         confirmationCode: String = "",
         notes: String = "",
+        phone: String = "",
+        websiteURL: String = "",
         confidence: Double = 1.0
     ) {
         self.restaurantName = restaurantName
@@ -382,6 +387,8 @@ final class DiningReservation: ItineraryItem {
         self.partySize = partySize
         self.confirmationCode = confirmationCode
         self.notes = notes
+        self.phone = phone
+        self.websiteURL = websiteURL
         self.confidence = confidence
     }
     
