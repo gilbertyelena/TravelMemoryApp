@@ -176,7 +176,7 @@ struct EmailInputView: View {
         isProcessing = true
 
         Task {
-            let result = EmailIngestionService.parse(subject: subject, body: emailBody, sender: sender)
+            let result = await EmailIngestionService.parseContent(subject: subject, body: emailBody, sender: sender)
             self.parseResult = result
             self.isProcessing = false
             self.showingResult = true

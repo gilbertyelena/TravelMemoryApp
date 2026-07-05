@@ -188,24 +188,18 @@ struct EditDiningView: View {
                         .clipShape(Capsule())
                     }
 
-                    // Import a place copied from the Google Maps app
-                    Button {
-                        nameFieldFocus = false
-                        pasteFromGoogleMaps()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "link")
-                                .font(.system(size: 11))
-                            Text("PASTE LINK")
-                                .font(.system(size: 10, weight: .semibold))
-                                .tracking(0.5)
+                    // Import a place copied from the Google Maps app.
+                    // System PasteButton: reads the clipboard without the
+                    // "Allow Paste?" alert that can deadlock inside sheets.
+                    PasteButton(payloadType: String.self) { strings in
+                        Task { @MainActor in
+                            handlePastedLink(strings.first ?? "")
                         }
-                        .foregroundStyle(Color.voyagerPrimary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(Color.voyagerPrimary.opacity(0.1))
-                        .clipShape(Capsule())
                     }
+                    .labelStyle(.titleOnly)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.mini)
+                    .tint(Color.voyagerPrimary.opacity(0.8))
                 }
             }
     }
@@ -512,11 +506,11 @@ struct EditDiningView: View {
         }
     }
 
-    /// Imports a "Share → Copy Link" from the Google Maps app.
-    private func pasteFromGoogleMaps() {
-        guard let text = UIPasteboard.general.string,
-              GoogleMapsLinkParser.isMapsLink(text) else {
-            pasteStatus = "Copy a Google Maps link first (Share → Copy link), then tap again."
+    /// Imports a "Share → Copy link" from the Google Maps app. The text
+    /// arrives from PasteButton — no direct pasteboard access involved.
+    private func handlePastedLink(_ text: String) {
+        guard GoogleMapsLinkParser.isMapsLink(text) else {
+            pasteStatus = "That wasn't a Google Maps link — use Share → Copy link in Google Maps."
             return
         }
         pasteStatus = "Reading link…"

@@ -459,6 +459,18 @@ struct GoogleMapsLinkParserTests {
         #expect(GoogleMapsLinkParser.parsePlace(from: home) == nil)
     }
 
+    @Test func sharedMapsLinkBecomesDiningImport() async throws {
+        // Sharing a restaurant from Google Maps must route to a dining
+        // item, not a meaningless email parse (previous behavior).
+        let body = "Look at this https://www.google.com/maps/place/Tantris/@48.161,11.58,15z/data=!3d48.1631899!4d11.5865861"
+        let result = await EmailIngestionService.parseContent(subject: "Shared Content", body: body, sender: "")
+
+        #expect(result.dining.count == 1)
+        #expect(result.dining.first?.restaurantName == "Tantris")
+        #expect(result.flights.isEmpty)
+        #expect(result.overallConfidence > 0.7)
+    }
+
     @Test func detectsMapsLinksInSharedText() {
         #expect(GoogleMapsLinkParser.isMapsLink("Check this out https://maps.app.goo.gl/AbC123"))
         #expect(GoogleMapsLinkParser.isMapsLink("https://www.google.com/maps/place/Tantris"))

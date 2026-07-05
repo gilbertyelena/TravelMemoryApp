@@ -98,7 +98,7 @@ struct PendingEmailProcessView: View {
             // Small delay for the animation
             try? await Task.sleep(nanoseconds: 800_000_000)
 
-            self.parseResult = EmailIngestionService.parse(
+            self.parseResult = await EmailIngestionService.parseContent(
                 subject: email.subject,
                 body: email.body,
                 sender: email.sender

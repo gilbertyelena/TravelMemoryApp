@@ -30,6 +30,31 @@ final class EmailIngestionService: ObservableObject {
         return EmailParser.parse(subject: subject, body: body, sender: sender)
     }
 
+    /// Like `parse`, but also understands shared Google Maps links —
+    /// a restaurant link shared from Google Maps becomes a dining item
+    /// instead of a meaningless email parse.
+    nonisolated static func parseContent(subject: String, body: String, sender: String) async -> EmailParser.ParseResult {
+        if GoogleMapsLinkParser.isMapsLink(body) {
+            var result = EmailParser.ParseResult()
+            if let place = await GoogleMapsLinkParser.expandAndParse(body) {
+                var dining = EmailParser.DiningParseData(
+                    restaurantName: place.name,
+                    confidence: 0.85
+                )
+                dining.reservationTime = nil
+                result.dining.append(dining)
+                result.overallConfidence = 0.85
+                result.suggestedTripName = "New Trip"
+                result.issues.append("Imported from a Google Maps link — set the date and trip after accepting, or paste the link inside the right trip's dining editor instead.")
+            } else {
+                result.issues.append("Couldn't read a place from that Google Maps link")
+                result.overallConfidence = 0.1
+            }
+            return result
+        }
+        return parse(subject: subject, body: body, sender: sender)
+    }
+
     /// Persist a reviewed parse result: find or create the matching trip
     /// (or use `targetTrip` when importing from a specific trip's screen),
     /// insert the itinerary items, and record the source email.
