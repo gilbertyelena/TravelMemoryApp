@@ -14,10 +14,10 @@ import SwiftData
 @Model
 final class PackingCategoryModel {
     var id: UUID = UUID()
-    var name: String
-    var icon: String
-    var colorHex: String  // Store color as hex for persistence
-    var sortOrder: Int
+    var name: String = ""
+    var icon: String = ""
+    var colorHex: String = ""  // Store color as hex for persistence
+    var sortOrder: Int = 0
     
     @Relationship(deleteRule: .cascade) var items: [PackingItemModel] = []
     var trip: Trip?
@@ -56,10 +56,10 @@ final class PackingCategoryModel {
 @Model
 final class PackingItemModel {
     var id: UUID = UUID()
-    var name: String
-    var isPacked: Bool
-    var quantity: Int
-    var sortOrder: Int
+    var name: String = ""
+    var isPacked: Bool = false
+    var quantity: Int = 0
+    var sortOrder: Int = 0
     
     var category: PackingCategoryModel?
     

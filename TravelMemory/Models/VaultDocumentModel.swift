@@ -11,10 +11,10 @@ import SwiftData
 @Model
 final class VaultDocument {
     var id: UUID = UUID()
-    var title: String
-    var categoryRaw: String  // "passport", "visa", "insurance", "boarding", "other"
+    var title: String = ""
+    var categoryRaw: String = ""  // "passport", "visa", "insurance", "boarding", "other"
     @Attribute(.externalStorage) var imageData: Data?
-    var notes: String
+    var notes: String = ""
     var createdAt: Date = Date()
     
     init(

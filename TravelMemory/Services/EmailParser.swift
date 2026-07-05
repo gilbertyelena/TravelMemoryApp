@@ -322,10 +322,12 @@ struct EmailParser {
         
         var confidenceBoost = 0.0
 
-        // Extract airline name
+        // Extract airline name. Whole-word match, longest names first —
+        // plain substring search finds "ANA" inside "Ryanair".
         var airlineCode: String?
-        for (code, name) in airlinesByCode {
-            if text.localizedCaseInsensitiveContains(name) {
+        for (code, name) in airlinesByCode.sorted(by: { $0.value.count > $1.value.count }) {
+            let pattern = "\\b\(NSRegularExpression.escapedPattern(for: name))\\b"
+            if text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil {
                 flight.airline = name
                 airlineCode = code
                 confidenceBoost += 0.1

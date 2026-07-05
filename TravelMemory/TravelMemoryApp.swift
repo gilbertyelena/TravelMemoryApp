@@ -8,6 +8,19 @@
 import SwiftUI
 import SwiftData
 
+/// iCloud sync switch. The models are CloudKit-compatible (defaults on
+/// every attribute, optional relationships, no unique constraints).
+/// To turn sync on:
+///   1. In Xcode: TravelMemory target → Signing & Capabilities →
+///      + iCloud → check CloudKit → add container
+///      "iCloud.com.alenka.TravelSteward" (and Background Modes →
+///      Remote notifications).
+///   2. Flip `isEnabled` to true.
+enum CloudSyncConfig {
+    static let isEnabled = false
+    static let containerID = "iCloud.com.alenka.TravelSteward"
+}
+
 @main
 struct TravelMemoryApp: App {
     var sharedModelContainer: ModelContainer = {
@@ -23,7 +36,13 @@ struct TravelMemoryApp: App {
             DiningReservation.self,
             TripActivity.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            cloudKitDatabase: CloudSyncConfig.isEnabled
+                ? .private(CloudSyncConfig.containerID)
+                : .none
+        )
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

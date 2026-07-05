@@ -17,11 +17,11 @@ final class Trip: Hashable {
     static func == (lhs: Trip, rhs: Trip) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     var id: UUID = UUID()
-    var name: String
-    var destination: String
-    var startDate: Date
-    var endDate: Date
-    var statusRaw: String // "planning", "live", "completed"
+    var name: String = ""
+    var destination: String = ""
+    var startDate: Date = Date.now
+    var endDate: Date = Date.now
+    var statusRaw: String = "" // "planning", "live", "completed"
     var createdAt: Date = Date()
     
     @Relationship(deleteRule: .cascade) var flights: [FlightSegment] = []
@@ -194,19 +194,19 @@ enum ItineraryItemType: String, Codable {
 @Model
 final class FlightSegment: ItineraryItem {
     var id: UUID = UUID()
-    var airline: String
-    var flightNumber: String
-    var departureAirport: String
-    var departureCity: String
-    var arrivalAirport: String
-    var arrivalCity: String
-    var departureTime: Date
-    var arrivalTime: Date
-    var gate: String
-    var seat: String
-    var terminal: String
-    var confirmationCode: String
-    var confidence: Double
+    var airline: String = ""
+    var flightNumber: String = ""
+    var departureAirport: String = ""
+    var departureCity: String = ""
+    var arrivalAirport: String = ""
+    var arrivalCity: String = ""
+    var departureTime: Date = Date.now
+    var arrivalTime: Date = Date.now
+    var gate: String = ""
+    var seat: String = ""
+    var terminal: String = ""
+    var confirmationCode: String = ""
+    var confidence: Double = 0
     // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
@@ -263,13 +263,13 @@ final class FlightSegment: ItineraryItem {
 @Model
 final class HotelBooking: ItineraryItem {
     var id: UUID = UUID()
-    var hotelName: String
-    var address: String
-    var checkInDate: Date
-    var checkOutDate: Date
-    var confirmationCode: String
-    var roomType: String
-    var confidence: Double
+    var hotelName: String = ""
+    var address: String = ""
+    var checkInDate: Date = Date.now
+    var checkOutDate: Date = Date.now
+    var confirmationCode: String = ""
+    var roomType: String = ""
+    var confidence: Double = 0
     // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
@@ -308,15 +308,15 @@ final class HotelBooking: ItineraryItem {
 @Model
 final class CarRentalBooking: ItineraryItem {
     var id: UUID = UUID()
-    var company: String
-    var vehicleType: String
-    var pickupTime: Date
-    var dropoffTime: Date
-    var pickupLocation: String
-    var dropoffLocation: String
-    var confirmationCode: String
-    var isPrepaid: Bool
-    var confidence: Double
+    var company: String = ""
+    var vehicleType: String = ""
+    var pickupTime: Date = Date.now
+    var dropoffTime: Date = Date.now
+    var pickupLocation: String = ""
+    var dropoffLocation: String = ""
+    var confirmationCode: String = ""
+    var isPrepaid: Bool = false
+    var confidence: Double = 0
     // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
@@ -355,16 +355,16 @@ final class CarRentalBooking: ItineraryItem {
 @Model
 final class DiningReservation: ItineraryItem {
     var id: UUID = UUID()
-    var restaurantName: String
-    var address: String
-    var reservationTime: Date
-    var partySize: Int
-    var confirmationCode: String
-    var notes: String
+    var restaurantName: String = ""
+    var address: String = ""
+    var reservationTime: Date = Date.now
+    var partySize: Int = 0
+    var confirmationCode: String = ""
+    var notes: String = ""
     // Contact details captured from map search, for one-tap booking handoff
     var phone: String = ""
     var websiteURL: String = ""
-    var confidence: Double
+    var confidence: Double = 0
     // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
@@ -440,16 +440,16 @@ enum ActivityCategory: String, CaseIterable, Codable {
 @Model
 final class TripActivity: ItineraryItem {
     var id: UUID = UUID()
-    var activityName: String
-    var provider: String
-    var location: String
-    var categoryRaw: String
-    var startTime: Date
-    var endTime: Date
-    var confirmationCode: String
-    var notes: String
-    var priceInfo: String
-    var confidence: Double
+    var activityName: String = ""
+    var provider: String = ""
+    var location: String = ""
+    var categoryRaw: String = ""
+    var startTime: Date = Date.now
+    var endTime: Date = Date.now
+    var confirmationCode: String = ""
+    var notes: String = ""
+    var priceInfo: String = ""
+    var confidence: Double = 0
     // Item lifecycle + budget (defaults keep SwiftData migration lightweight)
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
@@ -495,14 +495,14 @@ final class TripActivity: ItineraryItem {
 @Model
 final class ParsedEmail {
     var id: UUID = UUID()
-    var subject: String
-    var senderEmail: String
-    var rawBody: String
-    var receivedAt: Date
+    var subject: String = ""
+    var senderEmail: String = ""
+    var rawBody: String = ""
+    var receivedAt: Date = Date.now
     var parsedAt: Date = Date()
-    var statusRaw: String // "pending", "needsReview", "accepted", "rejected"
-    var overallConfidence: Double
-    var issues: [String] // JSON-encoded array of issue descriptions
+    var statusRaw: String = "" // "pending", "needsReview", "accepted", "rejected"
+    var overallConfidence: Double = 0
+    var issues: [String] = [] // JSON-encoded array of issue descriptions
     
     var trip: Trip?
     
