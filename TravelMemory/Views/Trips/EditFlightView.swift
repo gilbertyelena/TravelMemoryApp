@@ -33,6 +33,8 @@ struct EditFlightView: View {
     @State private var seat: String = ""
     @State private var terminal: String = ""
     @State private var confirmationCode: String = ""
+    @State private var departureZoneID: String = ""
+    @State private var arrivalZoneID: String = ""
     @State private var itemStatus: ItineraryItemStatus = .booked
     @State private var costText = ""
     @State private var currencyText = ""
@@ -50,6 +52,25 @@ struct EditFlightView: View {
     @FocusState private var depFocused: Bool
     @FocusState private var arrFocused: Bool
     
+    private var departureZone: TimeZone {
+        TimeZone(identifier: departureZoneID) ?? flight.trip?.timeZone ?? .current
+    }
+
+    private var arrivalZone: TimeZone {
+        TimeZone(identifier: arrivalZoneID) ?? flight.trip?.timeZone ?? .current
+    }
+
+    /// Looks up the local time zone for an airport's city, so departure
+    /// and arrival times are entered in the right local clocks.
+    private func lookupZone(city: String, assign: @escaping (String) -> Void) {
+        guard !city.isEmpty else { return }
+        CLGeocoder().geocodeAddressString(city) { placemarks, _ in
+            if let zone = placemarks?.first?.timeZone {
+                DispatchQueue.main.async { assign(zone.identifier) }
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -78,6 +99,7 @@ struct EditFlightView: View {
                                 departureQuery = ""
                                 showDepResults = false
                                 depFocused = false
+                                lookupZone(city: city) { departureZoneID = $0 }
                             }
                         )
                         
@@ -96,12 +118,13 @@ struct EditFlightView: View {
                                 arrivalQuery = ""
                                 showArrResults = false
                                 arrFocused = false
+                                lookupZone(city: city) { arrivalZoneID = $0 }
                             }
                         )
                         
                         // Times
-                        VoyagerDateField(title: "DEPARTURE", date: $departureTime)
-                        VoyagerDateField(title: "ARRIVAL", date: $arrivalTime)
+                        VoyagerDateField(title: "DEPARTURE", date: $departureTime, timeZone: departureZone)
+                        VoyagerDateField(title: "ARRIVAL", date: $arrivalTime, timeZone: arrivalZone)
                         
                         // Details
                         HStack(spacing: 12) {
@@ -404,6 +427,8 @@ struct EditFlightView: View {
         seat = flight.seat
         terminal = flight.terminal
         confirmationCode = flight.confirmationCode
+        departureZoneID = flight.timeZoneID
+        arrivalZoneID = flight.arrivalTimeZoneID
         itemStatus = flight.status
         costText = VoyagerCostField.format(flight.cost)
         currencyText = flight.currencyCode
@@ -425,6 +450,8 @@ struct EditFlightView: View {
         flight.status = itemStatus
         flight.cost = VoyagerCostField.parse(costText)
         flight.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
+        flight.timeZoneID = departureZone.identifier
+        flight.arrivalTimeZoneID = arrivalZone.identifier
         modelContext.saveOrLog()
         TripNotifications.resync(item: flight, itemID: flight.id)
         isFinalized = true
@@ -461,6 +488,8 @@ struct EditFlightView: View {
             arrivalTime: returnDeparture.addingTimeInterval(max(flightDuration, 0)),
             confirmationCode: confirmationCode.uppercased()
         )
+        returnFlight.timeZoneID = arrivalZone.identifier
+        returnFlight.arrivalTimeZoneID = departureZone.identifier
         returnFlight.trip = flight.trip
         modelContext.insert(returnFlight)
         modelContext.saveOrLog()

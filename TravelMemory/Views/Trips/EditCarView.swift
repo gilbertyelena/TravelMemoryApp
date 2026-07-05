@@ -30,6 +30,11 @@ struct EditCarView: View {
     @State private var isPrepaid: Bool = false
     @State private var showDeleteConfirm = false
     
+    /// Zone this event's times are entered and shown in
+    private var eventZone: TimeZone {
+        TimeZone(identifier: car.timeZoneID) ?? car.trip?.timeZone ?? .current
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -40,10 +45,10 @@ struct EditCarView: View {
                         VoyagerFormField(title: "COMPANY", placeholder: "Sixt", text: $company)
                         VoyagerFormField(title: "VEHICLE TYPE", placeholder: "BMW 5 Series", text: $vehicleType)
                         
-                        VoyagerDateField(title: "PICKUP", date: $pickupTime)
+                        VoyagerDateField(title: "PICKUP", date: $pickupTime, timeZone: eventZone)
                         VoyagerFormField(title: "PICKUP LOCATION", placeholder: "Airport Terminal 2", text: $pickupLocation)
                         
-                        VoyagerDateField(title: "DROP-OFF", date: $dropoffTime)
+                        VoyagerDateField(title: "DROP-OFF", date: $dropoffTime, timeZone: eventZone)
                         VoyagerFormField(title: "DROP-OFF LOCATION", placeholder: "Airport Terminal 2", text: $dropoffLocation)
                         
                         VoyagerStatusPicker(status: $itemStatus)
@@ -146,6 +151,7 @@ struct EditCarView: View {
         car.status = itemStatus
         car.cost = VoyagerCostField.parse(costText)
         car.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
+        car.timeZoneID = eventZone.identifier
         car.isPrepaid = isPrepaid
         modelContext.saveOrLog()
         TripNotifications.resync(item: car, itemID: car.id)

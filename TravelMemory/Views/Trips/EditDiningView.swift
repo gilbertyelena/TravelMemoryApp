@@ -49,6 +49,11 @@ struct EditDiningView: View {
     @State private var isNameFieldFocused = false
     @FocusState private var nameFieldFocus: Bool
     
+    /// Zone this event's times are entered and shown in
+    private var eventZone: TimeZone {
+        TimeZone(identifier: reservation.timeZoneID) ?? reservation.trip?.timeZone ?? .current
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -63,7 +68,7 @@ struct EditDiningView: View {
                         
                         VoyagerFormField(title: "ADDRESS", placeholder: "Full address", text: $address)
                         
-                        VoyagerDateField(title: "RESERVATION TIME", date: $reservationTime)
+                        VoyagerDateField(title: "RESERVATION TIME", date: $reservationTime, timeZone: eventZone)
                         
                         // Party size stepper
                         partySizeSection
@@ -593,6 +598,7 @@ struct EditDiningView: View {
         reservation.status = itemStatus
         reservation.cost = VoyagerCostField.parse(costText)
         reservation.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
+        reservation.timeZoneID = eventZone.identifier
         reservation.notes = notes
         modelContext.saveOrLog()
         TripNotifications.resync(item: reservation, itemID: reservation.id)

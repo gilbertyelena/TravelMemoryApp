@@ -54,21 +54,23 @@ struct TripAgendaView: View {
     let trip: Trip
     var onEdit: (any ItineraryItem) -> Void
 
-    private static let timeFmt: DateFormatter = {
+    private func timeText(_ item: any ItineraryItem) -> String {
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
-        return f
-    }()
+        f.timeZone = item.eventTimeZone(fallback: trip.timeZone)
+        return f.string(from: item.eventDate)
+    }
 
-    private static let dayFmt: DateFormatter = {
+    private var dayFmt: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "EEE d MMM"
+        f.timeZone = trip.timeZone
         return f
-    }()
+    }
 
     /// Every day of the trip (including empty ones) with its items
     private var days: [(day: Date, items: [any ItineraryItem])] {
-        let cal = Calendar.current
+        let cal = trip.calendar
         let grouped = Dictionary(grouping: trip.timelineItems) { cal.startOfDay(for: $0.eventDate) }
 
         var result: [(Date, [any ItineraryItem])] = []
@@ -100,12 +102,12 @@ struct TripAgendaView: View {
     }
 
     private func daySection(_ day: Date, items: [any ItineraryItem]) -> some View {
-        let isToday = Calendar.current.isDate(day, inSameDayAs: Date())
+        let isToday = trip.calendar.isDate(day, inSameDayAs: Date())
 
         return VStack(spacing: 0) {
             // Day header row
             HStack {
-                Text(Self.dayFmt.string(from: day).uppercased())
+                Text(dayFmt.string(from: day).uppercased())
                     .font(VoyagerFont.labelCaps)
                     .tracking(0.8)
                     .foregroundStyle(isToday ? Color.voyagerPrimaryAccent : Color.voyagerOnSurfaceVariant)
@@ -143,7 +145,7 @@ struct TripAgendaView: View {
             onEdit(item)
         } label: {
             HStack(spacing: 10) {
-                Text(Self.timeFmt.string(from: item.eventDate))
+                Text(timeText(item))
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color.voyagerPrimary)
                     .frame(width: 42, alignment: .leading)

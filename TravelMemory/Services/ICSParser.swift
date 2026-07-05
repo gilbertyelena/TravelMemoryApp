@@ -19,6 +19,8 @@ struct ICSParser {
         var start: Date?
         var end: Date?
         var isAllDay = false
+        var startTimeZoneID = ""
+        var endTimeZoneID = ""
     }
 
     /// Quick check whether raw text is an iCalendar payload.
@@ -92,6 +94,8 @@ struct ICSParser {
                 )
             flight.departureTime = event.start ?? flight.departureTime
             flight.arrivalTime = event.end ?? flight.arrivalTime
+            flight.departureTimeZoneID = event.startTimeZoneID
+            flight.arrivalTimeZoneID = event.endTimeZoneID
             flight.confidence = 0.9
             result.flights.append(flight)
             return
@@ -100,21 +104,23 @@ struct ICSParser {
         let hotelKeywords = ["hotel", "check-in", "check in", "apartment", "hostel",
                              "resort", "accommodation", "stay at", "b&b", "guesthouse", "inn "]
         if hotelKeywords.contains(where: { lowered.contains($0) }) {
-            result.hotels.append(EmailParser.HotelParseData(
+            var hotel = EmailParser.HotelParseData(
                 hotelName: cleanedTitle(event.summary),
                 address: event.location,
                 checkIn: event.start,
                 checkOut: event.end,
                 confirmationCode: EmailParser.extractConfirmationCode(from: haystack) ?? "",
                 confidence: 0.85
-            ))
+            )
+            hotel.timeZoneID = event.startTimeZoneID
+            result.hotels.append(hotel)
             return
         }
 
         let carKeywords = ["car rental", "rental car", "car hire", "pick up car",
                            "hertz", "avis", "sixt", "europcar", "enterprise rent", "budget rent"]
         if carKeywords.contains(where: { lowered.contains($0) }) {
-            result.carRentals.append(EmailParser.CarRentalParseData(
+            var car = EmailParser.CarRentalParseData(
                 company: cleanedTitle(event.summary),
                 vehicleType: "",
                 pickupTime: event.start,
@@ -123,7 +129,9 @@ struct ICSParser {
                 confirmationCode: EmailParser.extractConfirmationCode(from: haystack) ?? "",
                 isPrepaid: false,
                 confidence: 0.85
-            ))
+            )
+            car.timeZoneID = event.startTimeZoneID
+            result.carRentals.append(car)
             return
         }
 
@@ -137,6 +145,7 @@ struct ICSParser {
                 notes: event.details,
                 confidence: 0.85
             )
+            dining.timeZoneID = event.startTimeZoneID
             if let sizeMatch = haystack.range(
                 of: #"(?:table|party)\s+(?:for|of)\s+(\d{1,2})"#,
                 options: [.regularExpression, .caseInsensitive]
@@ -148,14 +157,16 @@ struct ICSParser {
         }
 
         // Everything else becomes an activity — still a useful import
-        result.activities.append(EmailParser.ActivityParseData(
+        var activity = EmailParser.ActivityParseData(
             activityName: cleanedTitle(event.summary),
             location: event.location,
             startTime: event.start,
             endTime: event.end,
             notes: event.details,
             confidence: 0.75
-        ))
+        )
+        activity.timeZoneID = event.startTimeZoneID
+        result.activities.append(activity)
     }
 
     /// Strips label prefixes calendar exporters like to add
@@ -203,8 +214,10 @@ struct ICSParser {
                 let parsed = parseDate(property.value, parameters: property.parameters)
                 current?.start = parsed.date
                 current?.isAllDay = parsed.isAllDay
+                current?.startTimeZoneID = property.parameters["TZID"] ?? (property.value.hasSuffix("Z") ? "UTC" : "")
             case "DTEND":
                 current?.end = parseDate(property.value, parameters: property.parameters).date
+                current?.endTimeZoneID = property.parameters["TZID"] ?? (property.value.hasSuffix("Z") ? "UTC" : "")
             default:
                 break
             }

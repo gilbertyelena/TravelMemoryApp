@@ -40,6 +40,11 @@ struct EditHotelView: View {
     @State private var isManualEntry = false
     @FocusState private var nameFocused: Bool
     
+    /// Zone this event's times are entered and shown in
+    private var eventZone: TimeZone {
+        TimeZone(identifier: hotel.timeZoneID) ?? hotel.trip?.timeZone ?? .current
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -55,8 +60,8 @@ struct EditHotelView: View {
                         }
                         
                         VoyagerFormField(title: "ROOM TYPE", placeholder: "Deluxe King", text: $roomType)
-                        VoyagerDateField(title: "CHECK-IN", date: $checkInDate, displayedComponents: .date)
-                        VoyagerDateField(title: "CHECK-OUT", date: $checkOutDate, displayedComponents: .date)
+                        VoyagerDateField(title: "CHECK-IN", date: $checkInDate, displayedComponents: .date, timeZone: eventZone)
+                        VoyagerDateField(title: "CHECK-OUT", date: $checkOutDate, displayedComponents: .date, timeZone: eventZone)
                         VoyagerStatusPicker(status: $itemStatus)
 
                         VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "KMP884920", text: $confirmationCode)
@@ -412,6 +417,7 @@ struct EditHotelView: View {
         hotel.status = itemStatus
         hotel.cost = VoyagerCostField.parse(costText)
         hotel.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
+        hotel.timeZoneID = eventZone.identifier
         hotel.roomType = roomType
         modelContext.saveOrLog()
         dismiss()

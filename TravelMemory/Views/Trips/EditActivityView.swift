@@ -32,6 +32,11 @@ struct EditActivityView: View {
     @State private var priceInfo = ""
     @State private var showDeleteConfirm = false
     
+    /// Zone this event's times are entered and shown in
+    private var eventZone: TimeZone {
+        TimeZone(identifier: activity.timeZoneID) ?? activity.trip?.timeZone ?? .current
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -62,8 +67,8 @@ struct EditActivityView: View {
                         VoyagerFormField(title: "PROVIDER", placeholder: "e.g. Blue Ocean Divers", text: $provider)
                         VoyagerFormField(title: "LOCATION", placeholder: "Meeting point or venue", text: $location)
                         
-                        VoyagerDateField(title: "START TIME", date: $startTime)
-                        VoyagerDateField(title: "END TIME", date: $endTime)
+                        VoyagerDateField(title: "START TIME", date: $startTime, timeZone: eventZone)
+                        VoyagerDateField(title: "END TIME", date: $endTime, timeZone: eventZone)
                         
                         HStack(spacing: 10) {
                             VoyagerStatusPicker(status: $itemStatus)
@@ -197,6 +202,7 @@ struct EditActivityView: View {
         activity.status = itemStatus
         activity.cost = VoyagerCostField.parse(costText)
         activity.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
+        activity.timeZoneID = eventZone.identifier
         activity.notes = notes
         activity.priceInfo = priceInfo
         modelContext.saveOrLog()

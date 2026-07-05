@@ -44,7 +44,7 @@ struct TripNotifications {
             )
             schedule(
                 id: "\(itemID)-leave",
-                title: "\(name) departs at \(timeText(flight.departureTime))",
+                title: "\(name) departs at \(timeText(flight.departureTime, zone: flight.eventTimeZone(fallback: .current)))",
                 body: flight.gate.isEmpty ? "Time to head to the airport." : "Gate \(flight.gate). Time to head to the airport.",
                 at: flight.departureTime.addingTimeInterval(-3 * 3600)
             )
@@ -53,7 +53,7 @@ struct TripNotifications {
             let name = dining.restaurantName.isEmpty ? "Dinner reservation" : dining.restaurantName
             schedule(
                 id: "\(itemID)-reminder",
-                title: "\(name) at \(timeText(dining.reservationTime))",
+                title: "\(name) at \(timeText(dining.reservationTime, zone: dining.eventTimeZone(fallback: .current)))",
                 body: dining.address.isEmpty ? "Reservation in 2 hours." : dining.address,
                 at: dining.reservationTime.addingTimeInterval(-2 * 3600)
             )
@@ -62,7 +62,7 @@ struct TripNotifications {
             let name = activity.activityName.isEmpty ? "Activity" : activity.activityName
             schedule(
                 id: "\(itemID)-reminder",
-                title: "\(name) at \(timeText(activity.startTime))",
+                title: "\(name) at \(timeText(activity.startTime, zone: activity.eventTimeZone(fallback: .current)))",
                 body: activity.location.isEmpty ? "Starts in 2 hours." : activity.location,
                 at: activity.startTime.addingTimeInterval(-2 * 3600)
             )
@@ -71,7 +71,7 @@ struct TripNotifications {
             let name = car.company.isEmpty ? "Car rental" : car.company
             schedule(
                 id: "\(itemID)-reminder",
-                title: "\(name) pickup at \(timeText(car.pickupTime))",
+                title: "\(name) pickup at \(timeText(car.pickupTime, zone: car.eventTimeZone(fallback: .current)))",
                 body: car.pickupLocation.isEmpty ? "Pickup in 2 hours." : car.pickupLocation,
                 at: car.pickupTime.addingTimeInterval(-2 * 3600)
             )
@@ -115,9 +115,10 @@ struct TripNotifications {
         UNUserNotificationCenter.current().add(request)
     }
 
-    private static func timeText(_ date: Date) -> String {
+    private static func timeText(_ date: Date, zone: TimeZone) -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "HH:mm"
+        fmt.timeZone = zone
         return fmt.string(from: date)
     }
 }

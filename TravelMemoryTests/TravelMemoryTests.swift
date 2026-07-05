@@ -322,6 +322,11 @@ struct ICSParserTests {
         let expectedArrival = try date(2025, 10, 12, 9, 20, zone: "Europe/Berlin")
         #expect(flight.departureTime == expectedDeparture)
         #expect(flight.arrivalTime == expectedArrival)
+
+        // The TZIDs themselves ride along, so the app can display
+        // event-local wall time regardless of the device zone
+        #expect(flight.departureTimeZoneID == "Europe/London")
+        #expect(flight.arrivalTimeZoneID == "Europe/Berlin")
     }
 
     @Test func allDayHotelEventBecomesBooking() throws {

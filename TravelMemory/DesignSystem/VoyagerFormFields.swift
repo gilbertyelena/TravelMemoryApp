@@ -159,14 +159,23 @@ struct ItemStatusBadge: View {
 }
 
 /// Labeled compact date picker with the Voyager input styling.
+/// When `timeZone` is set, the picker reads and writes wall-clock time
+/// in that zone — so a 19:30 Munich dinner entered from London is
+/// stored as 19:30 *in Munich*, not 19:30 BST.
 struct VoyagerDateField: View {
     let title: String
     @Binding var date: Date
     var displayedComponents: DatePickerComponents = [.date, .hourAndMinute]
+    var timeZone: TimeZone? = nil
+
+    private var zoneSuffix: String {
+        guard let timeZone, timeZone.identifier != TimeZone.current.identifier else { return "" }
+        return " · \(timeZone.abbreviation() ?? timeZone.identifier)"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
+            Text(title + zoneSuffix)
                 .font(VoyagerFont.labelCaps)
                 .tracking(1.0)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
@@ -177,6 +186,7 @@ struct VoyagerDateField: View {
                 .padding(10)
                 .background(Color.voyagerInputBackground)
                 .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+                .environment(\.timeZone, timeZone ?? .current)
         }
     }
 }

@@ -17,6 +17,7 @@ struct TripExporter {
     static func plainText(for trip: Trip) -> String {
         let dayFmt = DateFormatter()
         dayFmt.dateFormat = "EEEE, MMM d yyyy"
+        dayFmt.timeZone = trip.timeZone
         let timeFmt = DateFormatter()
         timeFmt.dateFormat = "HH:mm"
 
@@ -29,13 +30,14 @@ struct TripExporter {
         }
         lines.append(String(repeating: "─", count: 32))
 
-        let cal = Calendar.current
+        let cal = trip.calendar
         let grouped = Dictionary(grouping: trip.timelineItems) { cal.startOfDay(for: $0.eventDate) }
 
         for day in grouped.keys.sorted() {
             lines.append("")
             lines.append(dayFmt.string(from: day))
             for item in (grouped[day] ?? []).sorted(by: { $0.eventDate < $1.eventDate }) {
+                timeFmt.timeZone = item.eventTimeZone(fallback: trip.timeZone)
                 var line = "  \(timeFmt.string(from: item.eventDate))  \(item.agendaTitle)"
                 if item.status != .booked {
                     line += " [\(item.status.label)]"

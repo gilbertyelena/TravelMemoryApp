@@ -9,6 +9,7 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import CoreLocation
 
 // MARK: - Timeline Entry (unified wrapper)
 
@@ -71,19 +72,21 @@ struct TripDetailView: View {
         return entries.sorted { $0.date < $1.date }
     }
     
-    /// Group entries by calendar day
+    /// Group entries by calendar day — in the trip's zone, so "Tuesday"
+    /// means Tuesday at the destination
     private var groupedByDay: [(key: Date, entries: [TimelineEntry])] {
-        let cal = Calendar.current
+        let cal = trip.calendar
         let grouped = Dictionary(grouping: timelineEntries) { cal.startOfDay(for: $0.date) }
         return grouped.map { (key: $0.key, entries: $0.value) }
             .sorted { $0.key < $1.key }
     }
-    
-    private let dayFmt: DateFormatter = {
+
+    private var dayFmt: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "EEEE, MMM d"
+        f.timeZone = trip.timeZone
         return f
-    }()
+    }
     
     var body: some View {
         ZStack {
@@ -274,7 +277,10 @@ struct TripDetailView: View {
         .fullScreenCover(item: $viewingPassFor) { flight in
             BoardingPassViewer(flight: flight)
         }
-        .onAppear { weather.fetch(for: trip) }
+        .onAppear {
+            weather.fetch(for: trip)
+            resolveTripTimeZoneIfNeeded()
+        }
         .alert("Delete Trip?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 modelContext.delete(trip)
@@ -290,6 +296,19 @@ struct TripDetailView: View {
         }
     }
     
+    /// Geocodes the destination once to pin the trip's display zone
+    private func resolveTripTimeZoneIfNeeded() {
+        guard trip.timeZoneID.isEmpty, !trip.destination.isEmpty else { return }
+        let destination = trip.destination
+        CLGeocoder().geocodeAddressString(destination) { placemarks, _ in
+            guard let zone = placemarks?.first?.timeZone else { return }
+            DispatchQueue.main.async {
+                trip.timeZoneID = zone.identifier
+                modelContext.saveOrLog()
+            }
+        }
+    }
+
     // MARK: - Conflicts
 
     /// Pairs of items whose time spans overlap (hotels and car rentals
@@ -350,7 +369,7 @@ struct TripDetailView: View {
 
     /// Trip days with no dining plans yet
     private var freeEvenings: [Date] {
-        let cal = Calendar.current
+        let cal = trip.calendar
         let diningDays = Set(trip.dining.map { cal.startOfDay(for: $0.reservationTime) })
         var days: [Date] = []
         var day = cal.startOfDay(for: trip.startDate)
@@ -475,11 +494,11 @@ struct TripDetailView: View {
     // MARK: - Unified Timeline
     
     private var unifiedTimeline: some View {
-        let todayStart = Calendar.current.startOfDay(for: Date())
+        let todayStart = trip.calendar.startOfDay(for: Date())
         
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(groupedByDay.enumerated()), id: \.element.key) { dayIdx, group in
-                let isToday = Calendar.current.isDate(group.key, inSameDayAs: Date())
+                let isToday = trip.calendar.isDate(group.key, inSameDayAs: Date())
                 let isPast = group.key < todayStart
                 
                 // ━━ Day Header ━━
@@ -580,6 +599,7 @@ struct TripDetailView: View {
     private func flightTimelineCard(_ flight: FlightSegment) -> some View {
         let timeFmt = DateFormatter()
         let _ = timeFmt.dateFormat = "HH:mm"
+        let _ = timeFmt.timeZone = flight.eventTimeZone(fallback: trip.timeZone)
         
         return Button { editingFlight = flight } label: {
             VStack(spacing: 10) {
@@ -677,6 +697,7 @@ struct TripDetailView: View {
     private func hotelTimelineCard(_ hotel: HotelBooking) -> some View {
         let fmt = DateFormatter()
         let _ = fmt.dateFormat = "MMM d"
+        let _ = fmt.timeZone = hotel.eventTimeZone(fallback: trip.timeZone)
         
         return Button { editingHotel = hotel } label: {
             VStack(alignment: .leading, spacing: 8) {
@@ -729,6 +750,7 @@ struct TripDetailView: View {
     private func carTimelineCard(_ car: CarRentalBooking) -> some View {
         let fmt = DateFormatter()
         let _ = fmt.dateFormat = "MMM d, HH:mm"
+        let _ = fmt.timeZone = car.eventTimeZone(fallback: trip.timeZone)
         
         return Button { editingCar = car } label: {
             VStack(alignment: .leading, spacing: 8) {
@@ -786,6 +808,7 @@ struct TripDetailView: View {
     private func diningTimelineCard(_ dining: DiningReservation) -> some View {
         let timeFmt = DateFormatter()
         let _ = timeFmt.dateFormat = "HH:mm"
+        let _ = timeFmt.timeZone = dining.eventTimeZone(fallback: trip.timeZone)
         
         return Button { editingDining = dining } label: {
             VStack(alignment: .leading, spacing: 8) {
@@ -856,6 +879,7 @@ struct TripDetailView: View {
     private func activityTimelineCard(_ activity: TripActivity) -> some View {
         let timeFmt = DateFormatter()
         let _ = timeFmt.dateFormat = "HH:mm"
+        let _ = timeFmt.timeZone = activity.eventTimeZone(fallback: trip.timeZone)
         let catColor = Color(hex: activity.category.color)
         
         return Button { editingActivity = activity } label: {

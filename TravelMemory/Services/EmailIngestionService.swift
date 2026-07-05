@@ -93,6 +93,8 @@ final class EmailIngestionService: ObservableObject {
                 confirmationCode: flightData.confirmationCode,
                 confidence: flightData.confidence
             )
+            flight.timeZoneID = flightData.departureTimeZoneID
+            flight.arrivalTimeZoneID = flightData.arrivalTimeZoneID
             flight.cost = flightData.cost
             flight.currencyCode = flightData.currencyCode
             trip.flights.append(flight)
@@ -108,6 +110,7 @@ final class EmailIngestionService: ObservableObject {
                 confirmationCode: hotelData.confirmationCode,
                 confidence: hotelData.confidence
             )
+            hotel.timeZoneID = hotelData.timeZoneID
             hotel.cost = hotelData.cost
             hotel.currencyCode = hotelData.currencyCode
             trip.hotels.append(hotel)
@@ -125,6 +128,7 @@ final class EmailIngestionService: ObservableObject {
                 isPrepaid: carData.isPrepaid,
                 confidence: carData.confidence
             )
+            car.timeZoneID = carData.timeZoneID
             car.cost = carData.cost
             car.currencyCode = carData.currencyCode
             trip.carRentals.append(car)
@@ -140,6 +144,7 @@ final class EmailIngestionService: ObservableObject {
                 notes: diningData.notes,
                 confidence: diningData.confidence
             )
+            dining.timeZoneID = diningData.timeZoneID
             dining.cost = diningData.cost
             dining.currencyCode = diningData.currencyCode
             trip.dining.append(dining)
@@ -155,6 +160,7 @@ final class EmailIngestionService: ObservableObject {
                 notes: activityData.notes,
                 confidence: activityData.confidence
             )
+            activity.timeZoneID = activityData.timeZoneID
             activity.cost = activityData.cost
             activity.currencyCode = activityData.currencyCode
             trip.activities.append(activity)

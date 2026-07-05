@@ -39,6 +39,8 @@ struct EmailParser {
         var confidence: Double
         var cost: Double = 0
         var currencyCode: String = ""
+        var departureTimeZoneID: String = ""
+        var arrivalTimeZoneID: String = ""
     }
     
     struct HotelParseData {
@@ -50,6 +52,7 @@ struct EmailParser {
         var confidence: Double
         var cost: Double = 0
         var currencyCode: String = ""
+        var timeZoneID: String = ""
     }
     
     struct CarRentalParseData {
@@ -63,6 +66,7 @@ struct EmailParser {
         var confidence: Double
         var cost: Double = 0
         var currencyCode: String = ""
+        var timeZoneID: String = ""
     }
 
     struct DiningParseData {
@@ -74,6 +78,7 @@ struct EmailParser {
         var confidence: Double = 0.5
         var cost: Double = 0
         var currencyCode: String = ""
+        var timeZoneID: String = ""
     }
 
     struct ActivityParseData {
@@ -85,6 +90,7 @@ struct EmailParser {
         var confidence: Double = 0.5
         var cost: Double = 0
         var currencyCode: String = ""
+        var timeZoneID: String = ""
     }
     
     // MARK: - Main Parse Entry Point

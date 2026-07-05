@@ -398,18 +398,34 @@ struct EditTripView: View {
     // MARK: - Save
     
     private func save() {
+        let savedTrip: Trip
         switch mode {
         case .create:
             let trip = Trip(name: name, destination: destination, startDate: startDate, endDate: endDate)
             modelContext.insert(trip)
+            savedTrip = trip
         case .edit(let trip):
             trip.name = name
             trip.destination = destination
             trip.startDate = startDate
             trip.endDate = endDate
+            savedTrip = trip
         }
         modelContext.saveOrLog()
+        resolveTimeZone(for: savedTrip)
         dismiss()
+    }
+
+    /// Pins the trip's display zone to its destination's local zone
+    private func resolveTimeZone(for trip: Trip) {
+        guard !trip.destination.isEmpty else { return }
+        CLGeocoder().geocodeAddressString(trip.destination) { placemarks, _ in
+            guard let zone = placemarks?.first?.timeZone else { return }
+            DispatchQueue.main.async {
+                trip.timeZoneID = zone.identifier
+                modelContext.saveOrLog()
+            }
+        }
     }
     
     // MARK: - Form Helpers

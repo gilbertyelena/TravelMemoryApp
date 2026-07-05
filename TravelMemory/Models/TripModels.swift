@@ -23,6 +23,9 @@ final class Trip: Hashable {
     var endDate: Date = Date.now
     var statusRaw: String = "" // "planning", "live", "completed"
     var createdAt: Date = Date()
+    /// IANA zone of the destination (geocoded); itinerary times display
+    /// in this zone so the schedule matches local clocks when abroad
+    var timeZoneID: String = ""
     
     @Relationship(deleteRule: .cascade) var flights: [FlightSegment] = []
     @Relationship(deleteRule: .cascade) var hotels: [HotelBooking] = []
@@ -49,6 +52,17 @@ final class Trip: Hashable {
     var status: TripStatus {
         get { TripStatus(rawValue: statusRaw) ?? .planning }
         set { statusRaw = newValue.rawValue }
+    }
+
+    var timeZone: TimeZone {
+        TimeZone(identifier: timeZoneID) ?? .current
+    }
+
+    /// Calendar in the destination's zone, for day grouping
+    var calendar: Calendar {
+        var cal = Calendar.current
+        cal.timeZone = timeZone
+        return cal
     }
     
     var durationDays: Int {
@@ -156,12 +170,19 @@ protocol ItineraryItem: AnyObject {
     var statusRaw: String { get set }
     var cost: Double { get set }
     var currencyCode: String { get set }
+    /// IANA zone the event happens in ("" = inherit the trip's zone)
+    var timeZoneID: String { get set }
 }
 
 extension ItineraryItem {
     var status: ItineraryItemStatus {
         get { ItineraryItemStatus(rawValue: statusRaw) ?? .booked }
         set { statusRaw = newValue.rawValue }
+    }
+
+    /// The zone this event's times should display in
+    func eventTimeZone(fallback: TimeZone) -> TimeZone {
+        TimeZone(identifier: timeZoneID) ?? fallback
     }
 }
 
@@ -211,6 +232,8 @@ final class FlightSegment: ItineraryItem {
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
     var currencyCode: String = ""
+    var timeZoneID: String = "" // departure zone
+    var arrivalTimeZoneID: String = ""
     /// Boarding pass screenshot/photo, shown full-screen at the gate
     @Attribute(.externalStorage) var boardingPassData: Data? = nil
     
@@ -274,6 +297,7 @@ final class HotelBooking: ItineraryItem {
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
     var currencyCode: String = ""
+    var timeZoneID: String = ""
     
     var trip: Trip?
     
@@ -321,6 +345,7 @@ final class CarRentalBooking: ItineraryItem {
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
     var currencyCode: String = ""
+    var timeZoneID: String = ""
     
     var trip: Trip?
     
@@ -369,6 +394,7 @@ final class DiningReservation: ItineraryItem {
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
     var currencyCode: String = ""
+    var timeZoneID: String = ""
     
     var trip: Trip?
     
@@ -454,6 +480,7 @@ final class TripActivity: ItineraryItem {
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
     var currencyCode: String = ""
+    var timeZoneID: String = ""
     
     var trip: Trip?
     
