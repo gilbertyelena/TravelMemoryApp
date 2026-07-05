@@ -101,6 +101,7 @@ struct EditCarView: View {
             .alert("Delete Car Rental?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     isFinalized = true
+                    TripNotifications.cancel(itemID: car.id)
                     modelContext.delete(car)
                     modelContext.saveOrLog()
                     dismiss()
@@ -147,6 +148,7 @@ struct EditCarView: View {
         car.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         car.isPrepaid = isPrepaid
         modelContext.saveOrLog()
+        TripNotifications.resync(item: car, itemID: car.id)
         dismiss()
     }
     

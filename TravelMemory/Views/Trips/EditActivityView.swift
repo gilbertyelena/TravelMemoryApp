@@ -121,6 +121,7 @@ struct EditActivityView: View {
             .alert("Delete Activity?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     isFinalized = true
+                    TripNotifications.cancel(itemID: activity.id)
                     modelContext.delete(activity)
                     modelContext.saveOrLog()
                     dismiss()
@@ -199,6 +200,7 @@ struct EditActivityView: View {
         activity.notes = notes
         activity.priceInfo = priceInfo
         modelContext.saveOrLog()
+        TripNotifications.resync(item: activity, itemID: activity.id)
         dismiss()
     }
     

@@ -120,6 +120,7 @@ struct EditDiningView: View {
             .alert("Delete Reservation?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     isFinalized = true
+                    TripNotifications.cancel(itemID: reservation.id)
                     modelContext.delete(reservation)
                     modelContext.saveOrLog()
                     dismiss()
@@ -496,6 +497,7 @@ struct EditDiningView: View {
         reservation.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         reservation.notes = notes
         modelContext.saveOrLog()
+        TripNotifications.resync(item: reservation, itemID: reservation.id)
         dismiss()
     }
     

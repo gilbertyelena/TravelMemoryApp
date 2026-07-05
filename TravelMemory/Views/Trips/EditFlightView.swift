@@ -164,6 +164,7 @@ struct EditFlightView: View {
             .alert("Delete Flight?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     isFinalized = true
+                    TripNotifications.cancel(itemID: flight.id)
                     modelContext.delete(flight)
                     modelContext.saveOrLog()
                     dismiss()
@@ -347,6 +348,7 @@ struct EditFlightView: View {
         flight.cost = VoyagerCostField.parse(costText)
         flight.currencyCode = currencyText.trimmingCharacters(in: .whitespaces).uppercased()
         modelContext.saveOrLog()
+        TripNotifications.resync(item: flight, itemID: flight.id)
         isFinalized = true
     }
 
