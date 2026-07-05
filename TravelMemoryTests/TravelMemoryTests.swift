@@ -366,6 +366,60 @@ struct ICSParserTests {
     }
 }
 
+struct CSVImporterTests {
+
+    @Test func tokenizerHandlesQuotedFieldsAndSemicolons() {
+        let csv = "name;cost\n\"Restaurant; fancy\";\"1.234,50\""
+        let rows = CSVImporter.rows(from: csv)
+        #expect(rows.count == 2)
+        #expect(rows[1][0] == "Restaurant; fancy")
+
+        let quoted = CSVImporter.rows(from: "a,b\n\"x, y\",\"he said \"\"hi\"\"\"")
+        #expect(quoted[1][0] == "x, y")
+        #expect(quoted[1][1] == "he said \"hi\"")
+    }
+
+    @Test func importsSpreadsheetItinerary() throws {
+        let csv = """
+            Date,Time,Type,Name,Location,Cost,Notes
+            2025-10-12,06:25,Flight,FR 1885 STN to MUC,Stansted,£45,hand luggage only
+            2025-10-12,,Hotel,Hotel Vier Jahreszeiten,Munich,€890,
+            2025-10-13,19:30,Dinner,Tantris,Munich,,tasting menu
+            2025-10-14,10:00,,Old town walking tour,Marienplatz,€15,
+            """
+        let result = CSVImporter.parse(csv)
+
+        #expect(result.flights.count == 1)
+        #expect(result.hotels.count == 1)
+        #expect(result.dining.count == 1)
+        #expect(result.activities.count == 1)
+
+        let flight = try #require(result.flights.first)
+        #expect(flight.flightNumber == "FR1885")
+        #expect(flight.cost == 45)
+        #expect(flight.currencyCode == "GBP")
+        let dep = try #require(flight.departureTime)
+        let cal = Calendar.current
+        #expect(cal.component(.day, from: dep) == 12)
+        #expect(cal.component(.hour, from: dep) == 6)
+
+        let hotel = try #require(result.hotels.first)
+        #expect(hotel.hotelName == "Hotel Vier Jahreszeiten")
+        #expect(hotel.cost == 890)
+        #expect(hotel.currencyCode == "EUR")
+
+        #expect(result.dining.first?.restaurantName == "Tantris")
+        #expect(result.activities.first?.activityName == "Old town walking tour")
+        #expect(result.activities.first?.cost == 15)
+    }
+
+    @Test func unusableFileReportsIssue() {
+        let result = CSVImporter.parse("just some text without structure")
+        #expect(result.overallConfidence <= 0.2)
+        #expect(!result.issues.isEmpty)
+    }
+}
+
 struct EmailParserFallbackTests {
 
     @Test func unrelatedEmailYieldsLowConfidenceAndIssue() {

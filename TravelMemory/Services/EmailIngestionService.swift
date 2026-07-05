@@ -68,6 +68,8 @@ final class EmailIngestionService: ObservableObject {
                 confirmationCode: flightData.confirmationCode,
                 confidence: flightData.confidence
             )
+            flight.cost = flightData.cost
+            flight.currencyCode = flightData.currencyCode
             trip.flights.append(flight)
             modelContext.insert(flight)
         }
@@ -81,6 +83,8 @@ final class EmailIngestionService: ObservableObject {
                 confirmationCode: hotelData.confirmationCode,
                 confidence: hotelData.confidence
             )
+            hotel.cost = hotelData.cost
+            hotel.currencyCode = hotelData.currencyCode
             trip.hotels.append(hotel)
             modelContext.insert(hotel)
         }
@@ -96,6 +100,8 @@ final class EmailIngestionService: ObservableObject {
                 isPrepaid: carData.isPrepaid,
                 confidence: carData.confidence
             )
+            car.cost = carData.cost
+            car.currencyCode = carData.currencyCode
             trip.carRentals.append(car)
             modelContext.insert(car)
         }
@@ -109,6 +115,8 @@ final class EmailIngestionService: ObservableObject {
                 notes: diningData.notes,
                 confidence: diningData.confidence
             )
+            dining.cost = diningData.cost
+            dining.currencyCode = diningData.currencyCode
             trip.dining.append(dining)
             modelContext.insert(dining)
         }
@@ -122,6 +130,8 @@ final class EmailIngestionService: ObservableObject {
                 notes: activityData.notes,
                 confidence: activityData.confidence
             )
+            activity.cost = activityData.cost
+            activity.currencyCode = activityData.currencyCode
             trip.activities.append(activity)
             modelContext.insert(activity)
         }

@@ -982,6 +982,7 @@ struct AddItemSheet: View {
     var onDiningCreated: ((DiningReservation) -> Void)?
     @State private var showPasteImport = false
     @State private var showFilePicker = false
+    @State private var showCSVPicker = false
     @State private var icsParseResult: EmailParser.ParseResult?
     @State private var icsFileName = ""
     @State private var showICSResult = false
@@ -1012,6 +1013,10 @@ struct AddItemSheet: View {
 
                     addButton(icon: "calendar.badge.plus", title: "Import Calendar File", subtitle: "Exact import from an .ics \"Add to calendar\" file") {
                         showFilePicker = true
+                    }
+
+                    addButton(icon: "tablecells", title: "Import Spreadsheet (CSV)", subtitle: "Migrate an itinerary you keep in Excel or Sheets") {
+                        showCSVPicker = true
                     }
 
                     if let importError = icsImportError {
@@ -1118,6 +1123,15 @@ struct AddItemSheet: View {
                     icsImportError = error.localizedDescription
                 }
             }
+            .fileImporter(isPresented: $showCSVPicker, allowedContentTypes: [.commaSeparatedText, .plainText]) { pickResult in
+                icsImportError = nil
+                switch pickResult {
+                case .success(let url):
+                    importSpreadsheet(at: url)
+                case .failure(let error):
+                    icsImportError = error.localizedDescription
+                }
+            }
             .sheet(isPresented: $showICSResult) {
                 if let result = icsParseResult {
                     ParseResultView(
@@ -1136,6 +1150,20 @@ struct AddItemSheet: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func importSpreadsheet(at url: URL) {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else {
+            icsImportError = "Could not read \(url.lastPathComponent)"
+            return
+        }
+
+        icsFileName = url.lastPathComponent
+        icsParseResult = CSVImporter.parse(text)
+        showICSResult = true
     }
 
     private func importCalendarFile(at url: URL) {
