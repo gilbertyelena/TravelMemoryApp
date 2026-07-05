@@ -211,6 +211,8 @@ final class FlightSegment: ItineraryItem {
     var statusRaw: String = ItineraryItemStatus.booked.rawValue
     var cost: Double = 0
     var currencyCode: String = ""
+    /// Boarding pass screenshot/photo, shown full-screen at the gate
+    @Attribute(.externalStorage) var boardingPassData: Data? = nil
     
     var trip: Trip?
     

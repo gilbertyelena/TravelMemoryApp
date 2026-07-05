@@ -54,6 +54,7 @@ struct TripDetailView: View {
     @State private var appeared = false
     @AppStorage("tripViewMode") private var agendaMode = false
     @State private var shareItems: [Any]?
+    @State private var viewingPassFor: FlightSegment?
     /// IDs of freshly created (draft) items — deleted again if their
     /// editor is dismissed without saving.
     @State private var newItemIDs: Set<UUID> = []
@@ -268,6 +269,9 @@ struct TripDetailView: View {
                 ShareSheet(items: items)
                     .presentationDetents([.medium, .large])
             }
+        }
+        .fullScreenCover(item: $viewingPassFor) { flight in
+            BoardingPassViewer(flight: flight)
         }
         .alert("Delete Trip?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
@@ -602,6 +606,26 @@ struct TripDetailView: View {
                 }
                 .foregroundStyle(Color.voyagerOnSurface)
                 
+                if flight.boardingPassData != nil {
+                    Button {
+                        viewingPassFor = flight
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 11))
+                            Text("BOARDING PASS")
+                                .font(.system(size: 10, weight: .bold))
+                                .tracking(0.5)
+                        }
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.92))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 if !flight.confirmationCode.isEmpty || !flight.gate.isEmpty {
                     HStack {
                         if !flight.gate.isEmpty {

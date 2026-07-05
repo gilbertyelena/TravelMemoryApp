@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import PhotosUI
 
 struct EditFlightView: View {
     @Environment(\.modelContext) private var modelContext
@@ -36,6 +37,8 @@ struct EditFlightView: View {
     @State private var costText = ""
     @State private var currencyText = ""
     @State private var showDeleteConfirm = false
+    @State private var passPickerItem: PhotosPickerItem?
+    @State private var showPassViewer = false
     
     // Search state
     @State private var departureQuery: String = ""
@@ -112,6 +115,8 @@ struct EditFlightView: View {
                         VoyagerFormField(title: "CONFIRMATION CODE", placeholder: "ABCX7K", text: $confirmationCode)
 
                         VoyagerCostField(costText: $costText, currencyCode: $currencyText)
+
+                        boardingPassSection
                         
                         Button { save() } label: { Text("SAVE") }
                             .buttonStyle(VoyagerPrimaryButtonStyle())
@@ -183,6 +188,79 @@ struct EditFlightView: View {
         }
     }
     
+    // MARK: - Boarding Pass
+
+    private var boardingPassSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("BOARDING PASS")
+                .font(VoyagerFont.labelCaps)
+                .tracking(1.0)
+                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+
+            if let data = flight.boardingPassData, let image = UIImage(data: data) {
+                HStack(spacing: 12) {
+                    Button { showPassViewer = true } label: {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 72, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button { showPassViewer = true } label: {
+                        Text("VIEW FULL SCREEN")
+                            .font(.system(size: 11, weight: .semibold))
+                            .tracking(0.5)
+                            .foregroundStyle(Color.voyagerPrimary)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        flight.boardingPassData = nil
+                        modelContext.saveOrLog()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.voyagerError)
+                    }
+                }
+                .padding(10)
+                .background(Color.voyagerInputBackground)
+                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+            } else {
+                PhotosPicker(selection: $passPickerItem, matching: .images) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "qrcode.viewfinder")
+                            .font(.system(size: 14))
+                        Text("ATTACH SCREENSHOT OR PHOTO")
+                            .font(.system(size: 11, weight: .semibold))
+                            .tracking(0.5)
+                    }
+                    .foregroundStyle(Color.voyagerPrimary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.voyagerPrimary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+                }
+            }
+        }
+        .onChange(of: passPickerItem) { _, newItem in
+            guard let newItem else { return }
+            Task {
+                if let data = try? await newItem.loadTransferable(type: Data.self) {
+                    flight.boardingPassData = data
+                    modelContext.saveOrLog()
+                }
+                passPickerItem = nil
+            }
+        }
+        .fullScreenCover(isPresented: $showPassViewer) {
+            BoardingPassViewer(flight: flight)
+        }
+    }
+
     // MARK: - Airport Search Field
     
     private func airportSearchField(
@@ -389,5 +467,40 @@ struct EditFlightView: View {
 
         dismiss()
         onSaveAndAddReturn?(returnFlight)
+    }
+}
+
+// MARK: - Boarding Pass Viewer
+
+/// Full-screen, high-contrast pass display for the gate scanner.
+struct BoardingPassViewer: View {
+    let flight: FlightSegment
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Color.white.ignoresSafeArea()
+
+            if let data = flight.boardingPassData, let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(12)
+            }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundStyle(.black.opacity(0.5))
+                    }
+                    .padding()
+                }
+                Spacer()
+            }
+        }
+        .preferredColorScheme(.light)
     }
 }
