@@ -15,7 +15,7 @@ struct VoyagerTabView: View {
         case trips, explore, vault, profile
         
         var label: String {
-            rawValue.capitalized
+            self == .profile ? "Settings" : rawValue.capitalized
         }
         
         var icon: String {
@@ -23,7 +23,7 @@ struct VoyagerTabView: View {
             case .trips: return "airplane.departure"
             case .explore: return "safari"
             case .vault: return "lock.fill"
-            case .profile: return "person.fill"
+            case .profile: return "gearshape"
             }
         }
         
@@ -32,7 +32,7 @@ struct VoyagerTabView: View {
             case .trips: return "airplane.departure"
             case .explore: return "safari.fill"
             case .vault: return "lock.fill"
-            case .profile: return "person.fill"
+            case .profile: return "gearshape.fill"
             }
         }
     }
@@ -54,7 +54,7 @@ struct VoyagerTabView: View {
                     }
                 case .profile:
                     NavigationStack {
-                        ProfilePlaceholderView()
+                        SettingsView()
                     }
                 }
             }
@@ -118,27 +118,6 @@ struct VoyagerTabView: View {
                 }
                 .shadow(color: Color.voyagerPrimaryAccent.opacity(0.15), radius: 12, y: -4)
         )
-    }
-}
-
-// MARK: - Profile Placeholder
-
-struct ProfilePlaceholderView: View {
-    var body: some View {
-        ZStack {
-            Color.voyagerBackground.ignoresSafeArea()
-            VStack(spacing: 16) {
-                Image(systemName: "person.circle")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Color.voyagerPrimary)
-                Text("Profile")
-                    .font(VoyagerFont.headlineMedium)
-                    .foregroundStyle(Color.voyagerOnSurface)
-                Text("Coming Soon")
-                    .font(VoyagerFont.bodySmall)
-                    .foregroundStyle(Color.voyagerOnSurfaceVariant)
-            }
-        }
     }
 }
 

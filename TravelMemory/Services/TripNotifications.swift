@@ -12,6 +12,17 @@ import UserNotifications
 
 struct TripNotifications {
 
+    // User preferences (Settings tab)
+    private static var remindersEnabled: Bool {
+        UserDefaults.standard.object(forKey: "remindersEnabled") as? Bool ?? true
+    }
+    private static var checkinLead: TimeInterval {
+        Double(UserDefaults.standard.object(forKey: "checkinLeadHours") as? Int ?? 24) * 3600
+    }
+    private static var reminderLead: TimeInterval {
+        Double(UserDefaults.standard.object(forKey: "reminderLeadHours") as? Int ?? 2) * 3600
+    }
+
     /// Ask once; scheduling is a no-op if the user declines.
     static func requestPermissionIfNeeded() {
         let center = UNUserNotificationCenter.current()
@@ -27,8 +38,8 @@ struct TripNotifications {
     static func resync(item: any ItineraryItem, itemID: UUID) {
         cancel(itemID: itemID)
 
-        // Ideas aren't commitments; only remind about planned/booked items
-        guard item.status != .idea else { return }
+        // Respect the Settings toggle; ideas aren't commitments either
+        guard remindersEnabled, item.status != .idea else { return }
 
         switch item {
         case let flight as FlightSegment:
@@ -39,8 +50,8 @@ struct TripNotifications {
             schedule(
                 id: "\(itemID)-checkin",
                 title: "Check in for \(name)",
-                body: destination.isEmpty ? "Departs tomorrow." : "To \(destination) — departs tomorrow.",
-                at: flight.departureTime.addingTimeInterval(-24 * 3600)
+                body: destination.isEmpty ? "Departure coming up." : "To \(destination) — departure coming up.",
+                at: flight.departureTime.addingTimeInterval(-checkinLead)
             )
             schedule(
                 id: "\(itemID)-leave",
@@ -54,8 +65,8 @@ struct TripNotifications {
             schedule(
                 id: "\(itemID)-reminder",
                 title: "\(name) at \(timeText(dining.reservationTime, zone: dining.eventTimeZone(fallback: .current)))",
-                body: dining.address.isEmpty ? "Reservation in 2 hours." : dining.address,
-                at: dining.reservationTime.addingTimeInterval(-2 * 3600)
+                body: dining.address.isEmpty ? "Reservation coming up." : dining.address,
+                at: dining.reservationTime.addingTimeInterval(-reminderLead)
             )
 
         case let activity as TripActivity:
@@ -63,8 +74,8 @@ struct TripNotifications {
             schedule(
                 id: "\(itemID)-reminder",
                 title: "\(name) at \(timeText(activity.startTime, zone: activity.eventTimeZone(fallback: .current)))",
-                body: activity.location.isEmpty ? "Starts in 2 hours." : activity.location,
-                at: activity.startTime.addingTimeInterval(-2 * 3600)
+                body: activity.location.isEmpty ? "Starting soon." : activity.location,
+                at: activity.startTime.addingTimeInterval(-reminderLead)
             )
 
         case let car as CarRentalBooking:
@@ -72,8 +83,8 @@ struct TripNotifications {
             schedule(
                 id: "\(itemID)-reminder",
                 title: "\(name) pickup at \(timeText(car.pickupTime, zone: car.eventTimeZone(fallback: .current)))",
-                body: car.pickupLocation.isEmpty ? "Pickup in 2 hours." : car.pickupLocation,
-                at: car.pickupTime.addingTimeInterval(-2 * 3600)
+                body: car.pickupLocation.isEmpty ? "Pickup coming up." : car.pickupLocation,
+                at: car.pickupTime.addingTimeInterval(-reminderLead)
             )
 
         default:

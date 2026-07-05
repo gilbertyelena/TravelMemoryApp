@@ -113,6 +113,12 @@ struct VoyagerCostField: View {
                     )
             }
         }
+        .onAppear {
+            // Pre-fill the Settings default so costs group consistently
+            if currencyCode.isEmpty {
+                currencyCode = UserDefaults.standard.string(forKey: "defaultCurrencyCode") ?? ""
+            }
+        }
     }
 
     /// Parses user cost input tolerantly ("1,234.50", "12,50" → Double)
