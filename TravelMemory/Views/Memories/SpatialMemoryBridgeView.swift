@@ -63,6 +63,7 @@ struct SpatialMemoryBridgeView: View {
     @Query(sort: \Trip.startDate, order: .forward) private var trips: [Trip]
     @StateObject private var geoService = TripGeocodingService()
     @State private var selectedPin: TripMapPin?
+    @State private var summaryTrip: Trip?
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var appeared = false
     @State private var nearbyResults: [NearbyPlace] = []
@@ -100,6 +101,9 @@ struct SpatialMemoryBridgeView: View {
             overlayLayer
         }
         .navigationBarHidden(true)
+        .sheet(item: $summaryTrip) { trip in
+            TripSummaryView(trip: trip)
+        }
         .onChange(of: trips) { _, newTrips in
             geoService.geocode(trips: newTrips)
         }
@@ -415,6 +419,23 @@ struct SpatialMemoryBridgeView: View {
                 mapSearchButton(icon: "fork.knife", label: "Restaurants", query: "restaurants", destination: pin.name)
                 mapSearchButton(icon: "bed.double", label: "Hotels", query: "hotels", destination: pin.name)
                 mapSearchButton(icon: "star", label: "Attractions", query: "attractions", destination: pin.name)
+            }
+
+            Button {
+                summaryTrip = pin.trip
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12))
+                    Text(pin.status == .completed ? "TRIP RECAP" : "TRIP STATS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.6)
+                }
+                .foregroundStyle(Color.voyagerTertiary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(Color.voyagerTertiary.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
         .padding(16)
