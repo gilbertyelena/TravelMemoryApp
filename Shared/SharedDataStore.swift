@@ -77,4 +77,32 @@ struct SharedDataStore {
     static var hasPendingEmails: Bool {
         !loadPendingEmails().isEmpty
     }
+
+    // MARK: - Widget Snapshot
+
+    /// The next upcoming itinerary item, written by the app and read by
+    /// the lock-screen/home-screen widget.
+    struct NextUpSnapshot: Codable {
+        var title: String
+        var detail: String
+        var date: Date
+        var iconSystemName: String
+    }
+
+    private static let nextUpKey = "nextUpSnapshot"
+
+    static func saveNextUp(_ snapshot: NextUpSnapshot?) {
+        guard let snapshot else {
+            sharedDefaults?.removeObject(forKey: nextUpKey)
+            return
+        }
+        if let data = try? JSONEncoder().encode(snapshot) {
+            sharedDefaults?.set(data, forKey: nextUpKey)
+        }
+    }
+
+    static func loadNextUp() -> NextUpSnapshot? {
+        guard let data = sharedDefaults?.data(forKey: nextUpKey) else { return nil }
+        return try? JSONDecoder().decode(NextUpSnapshot.self, from: data)
+    }
 }

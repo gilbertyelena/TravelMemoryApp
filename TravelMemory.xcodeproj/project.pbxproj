@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		57ABB13C2FAF66120007FDE0 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 57ABB1322FAF66120007FDE0 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		57ABB1702FAF66120007FDE0 /* TravelWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 57ABB1712FAF66120007FDE0 /* TravelWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -17,6 +18,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 57ABB1312FAF66120007FDE0;
 			remoteInfo = ShareExtension;
+		};
+		57ABB1722FAF66120007FDE0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 57F6AFFC2FA14FF400039210 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 57ABB1782FAF66120007FDE0;
+			remoteInfo = TravelWidget;
 		};
 		57F6B0142FA14FF500039210 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -42,6 +50,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				57ABB13C2FAF66120007FDE0 /* ShareExtension.appex in Embed Foundation Extensions */,
+				57ABB1702FAF66120007FDE0 /* TravelWidget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -50,6 +59,7 @@
 
 /* Begin PBXFileReference section */
 		57ABB1322FAF66120007FDE0 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		57ABB1712FAF66120007FDE0 /* TravelWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TravelWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		57F6B0042FA14FF400039210 /* TravelMemory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TravelMemory.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		57F6B0132FA14FF500039210 /* TravelMemoryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TravelMemoryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		57F6B01D2FA14FF500039210 /* TravelMemoryUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TravelMemoryUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -62,6 +72,13 @@
 				Info.plist,
 			);
 			target = 57ABB1312FAF66120007FDE0 /* ShareExtension */;
+		};
+		57ABB1732FAF66120007FDE0 /* Exceptions for "TravelWidget" folder in "TravelWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 57ABB1782FAF66120007FDE0 /* TravelWidget */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -77,6 +94,14 @@
 		57ABB1502FAF66120007FDE0 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		57ABB1742FAF66120007FDE0 /* TravelWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				57ABB1732FAF66120007FDE0 /* Exceptions for "TravelWidget" folder in "TravelWidget" target */,
+			);
+			path = TravelWidget;
 			sourceTree = "<group>";
 		};
 		57F6B0062FA14FF400039210 /* TravelMemory */ = {
@@ -97,6 +122,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		57ABB1752FAF66120007FDE0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		57ABB12F2FAF66120007FDE0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -136,6 +168,7 @@
 				57F6B0162FA14FF500039210 /* TravelMemoryTests */,
 				57F6B0202FA14FF500039210 /* TravelMemoryUITests */,
 				57ABB1332FAF66120007FDE0 /* ShareExtension */,
+				57ABB1742FAF66120007FDE0 /* TravelWidget */,
 				57F6B0052FA14FF400039210 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -147,6 +180,7 @@
 				57F6B0132FA14FF500039210 /* TravelMemoryTests.xctest */,
 				57F6B01D2FA14FF500039210 /* TravelMemoryUITests.xctest */,
 				57ABB1322FAF66120007FDE0 /* ShareExtension.appex */,
+				57ABB1712FAF66120007FDE0 /* TravelWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -154,6 +188,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		57ABB1782FAF66120007FDE0 /* TravelWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57ABB17C2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "TravelWidget" */;
+			buildPhases = (
+				57ABB1772FAF66120007FDE0 /* Sources */,
+				57ABB1752FAF66120007FDE0 /* Frameworks */,
+				57ABB1762FAF66120007FDE0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				57ABB1742FAF66120007FDE0 /* TravelWidget */,
+				57ABB1502FAF66120007FDE0 /* Shared */,
+			);
+			name = TravelWidget;
+			packageProductDependencies = (
+			);
+			productName = TravelWidget;
+			productReference = 57ABB1712FAF66120007FDE0 /* TravelWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		57ABB1312FAF66120007FDE0 /* ShareExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 57ABB13E2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
@@ -190,6 +247,7 @@
 			);
 			dependencies = (
 				57ABB13B2FAF66120007FDE0 /* PBXTargetDependency */,
+				57ABB1792FAF66120007FDE0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				57ABB1502FAF66120007FDE0 /* Shared */,
@@ -292,11 +350,19 @@
 				57F6B0122FA14FF500039210 /* TravelMemoryTests */,
 				57F6B01C2FA14FF500039210 /* TravelMemoryUITests */,
 				57ABB1312FAF66120007FDE0 /* ShareExtension */,
+				57ABB1782FAF66120007FDE0 /* TravelWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		57ABB1762FAF66120007FDE0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		57ABB1302FAF66120007FDE0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -328,6 +394,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		57ABB1772FAF66120007FDE0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		57ABB12E2FAF66120007FDE0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -359,6 +432,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		57ABB1792FAF66120007FDE0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 57ABB1782FAF66120007FDE0 /* TravelWidget */;
+			targetProxy = 57ABB1722FAF66120007FDE0 /* PBXContainerItemProxy */;
+		};
 		57ABB13B2FAF66120007FDE0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 57ABB1312FAF66120007FDE0 /* ShareExtension */;
@@ -377,6 +455,60 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		57ABB17A2FAF66120007FDE0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TravelWidget/TravelWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TravelWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.TravelWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		57ABB17B2FAF66120007FDE0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TravelWidget/TravelWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TravelWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.TravelWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		57ABB13F2FAF66120007FDE0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -685,6 +817,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		57ABB17C2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "TravelWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57ABB17A2FAF66120007FDE0 /* Debug */,
+				57ABB17B2FAF66120007FDE0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		57ABB13E2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

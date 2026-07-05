@@ -11,6 +11,7 @@ import SwiftData
 // MARK: - Main Content View
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var pendingEmail: SharedDataStore.SharedEmail?
 
@@ -21,6 +22,8 @@ struct ContentView: View {
                     if newPhase == .active {
                         checkForPendingEmails()
                     }
+                    // Keep the widget's "next up" snapshot fresh
+                    WidgetSnapshotService.refresh(context: modelContext)
                 }
                 .onAppear {
                     checkForPendingEmails()
