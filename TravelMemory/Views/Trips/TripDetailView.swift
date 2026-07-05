@@ -52,6 +52,7 @@ struct TripDetailView: View {
     @State private var editingActivity: TripActivity?
     @State private var showDeleteConfirm = false
     @State private var appeared = false
+    @AppStorage("tripViewMode") private var agendaMode = false
     /// IDs of freshly created (draft) items — deleted again if their
     /// editor is dismissed without saving.
     @State private var newItemIDs: Set<UUID> = []
@@ -90,9 +91,16 @@ struct TripDetailView: View {
                     // Trip header
                     tripHeader
                     
-                    // ━━ UNIFIED TIMELINE ━━
+                    if !conflicts.isEmpty {
+                        conflictBanner
+                            .padding(.horizontal, VoyagerSpacing.marginMain)
+                    }
+
+                    // ━━ UNIFIED TIMELINE / AGENDA ━━
                     if timelineEntries.isEmpty {
                         emptyTimeline
+                    } else if agendaMode {
+                        TripAgendaView(trip: trip, onEdit: edit(item:))
                     } else {
                         unifiedTimeline
                     }
@@ -157,6 +165,15 @@ struct TripDetailView: View {
                     .font(VoyagerFont.bodySmall)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.voyagerOnSurface)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { agendaMode.toggle() }
+                } label: {
+                    Image(systemName: agendaMode ? "calendar.day.timeline.left" : "list.bullet.rectangle")
+                        .foregroundStyle(Color.voyagerPrimary)
+                }
+                .accessibilityLabel(agendaMode ? "Show timeline" : "Show agenda")
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showEditTrip = true } label: {
@@ -234,6 +251,62 @@ struct TripDetailView: View {
         }
     }
     
+    // MARK: - Conflicts
+
+    /// Pairs of items whose time spans overlap (hotels and car rentals
+    /// span days by nature, so they are excluded).
+    private var conflicts: [(a: any ItineraryItem, b: any ItineraryItem)] {
+        let items = trip.timelineItems.filter { !($0 is HotelBooking) && !($0 is CarRentalBooking) }
+        var found: [(any ItineraryItem, any ItineraryItem)] = []
+        for i in items.indices {
+            for j in items.indices where j > i {
+                if items[i].occupiedInterval.intersects(items[j].occupiedInterval) {
+                    found.append((items[i], items[j]))
+                }
+            }
+        }
+        return found
+    }
+
+    private var conflictBanner: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                Text("SCHEDULE CONFLICT\(conflicts.count == 1 ? "" : "S")")
+                    .font(VoyagerFont.labelCaps)
+                    .tracking(0.8)
+            }
+            .foregroundStyle(Color.voyagerTertiary)
+
+            ForEach(Array(conflicts.prefix(3).enumerated()), id: \.offset) { _, pair in
+                Text("\(pair.a.agendaTitle) overlaps \(pair.b.agendaTitle)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.voyagerOnSurfaceVariant)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.voyagerTertiary.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+        .overlay(
+            RoundedRectangle(cornerRadius: VoyagerRadius.medium)
+                .stroke(Color.voyagerTertiary.opacity(0.25), lineWidth: 0.5)
+        )
+    }
+
+    /// Routes an agenda row tap to the right editor sheet
+    private func edit(item: any ItineraryItem) {
+        switch item {
+        case let flight as FlightSegment: editingFlight = flight
+        case let hotel as HotelBooking: editingHotel = hotel
+        case let car as CarRentalBooking: editingCar = car
+        case let dining as DiningReservation: editingDining = dining
+        case let activity as TripActivity: editingActivity = activity
+        default: break
+        }
+    }
+
     // MARK: - Free Evenings
 
     /// Trip days with no dining plans yet
