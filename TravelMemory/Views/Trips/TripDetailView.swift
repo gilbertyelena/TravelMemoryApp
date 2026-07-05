@@ -55,6 +55,7 @@ struct TripDetailView: View {
     @AppStorage("tripViewMode") private var agendaMode = false
     @State private var shareItems: [Any]?
     @State private var viewingPassFor: FlightSegment?
+    @StateObject private var weather = WeatherService()
     /// IDs of freshly created (draft) items — deleted again if their
     /// editor is dismissed without saving.
     @State private var newItemIDs: Set<UUID> = []
@@ -273,6 +274,7 @@ struct TripDetailView: View {
         .fullScreenCover(item: $viewingPassFor) { flight in
             BoardingPassViewer(flight: flight)
         }
+        .onAppear { weather.fetch(for: trip) }
         .alert("Delete Trip?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 modelContext.delete(trip)
@@ -517,6 +519,20 @@ struct TripDetailView: View {
                     }
                     
                     Spacer()
+
+                    if let forecast = weather.daily[group.key] {
+                        HStack(spacing: 4) {
+                            Image(systemName: forecast.symbol)
+                                .font(.system(size: 11))
+                            Text(forecast.chipText)
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.voyagerSurfaceContainerLow)
+                        .clipShape(Capsule())
+                    }
                 }
                 .padding(.horizontal, VoyagerSpacing.marginMain)
                 .padding(.top, dayIdx == 0 ? 0 : 20)
