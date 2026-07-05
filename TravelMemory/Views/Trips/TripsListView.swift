@@ -16,6 +16,7 @@ struct TripsListView: View {
     @State private var showCreateTrip = false
     @State private var showEmailInput = false
     @State private var selectedTrip: Trip?
+    @State private var viewingPassFor: FlightSegment?
     @State private var appeared = false
     
     /// The next upcoming event across all trips
@@ -37,14 +38,40 @@ struct TripsListView: View {
             }
             
             // Check upcoming flights
-            for flight in trip.flights where flight.departureTime > now {
+            for flight in trip.flights where flight.departureTime > now && flight.status != .idea {
                 candidates.append(NextUpInfo(
                     trip: trip,
                     icon: "airplane.departure",
                     title: "\(flight.airline) \(flight.flightNumber)",
                     subtitle: "\(flight.departureAirport) → \(flight.arrivalAirport)",
                     date: flight.departureTime,
-                    accentColor: .voyagerPrimaryAccent
+                    accentColor: .voyagerPrimaryAccent,
+                    flight: flight,
+                    timeZone: flight.eventTimeZone(fallback: trip.timeZone)
+                ))
+            }
+
+            // Dining and activities matter on the travel day too
+            for dining in trip.dining where dining.reservationTime > now && dining.status != .idea {
+                candidates.append(NextUpInfo(
+                    trip: trip,
+                    icon: "fork.knife",
+                    title: dining.restaurantName.isEmpty ? "Dinner reservation" : dining.restaurantName,
+                    subtitle: dining.address,
+                    date: dining.reservationTime,
+                    accentColor: Color(hex: "#FFB868"),
+                    timeZone: dining.eventTimeZone(fallback: trip.timeZone)
+                ))
+            }
+            for activity in trip.activities where activity.startTime > now && activity.status != .idea {
+                candidates.append(NextUpInfo(
+                    trip: trip,
+                    icon: activity.category.icon,
+                    title: activity.activityName.isEmpty ? "Activity" : activity.activityName,
+                    subtitle: activity.location,
+                    date: activity.startTime,
+                    accentColor: Color(hex: activity.category.color),
+                    timeZone: activity.eventTimeZone(fallback: trip.timeZone)
                 ))
             }
             
@@ -100,10 +127,13 @@ struct TripsListView: View {
                         
                         // ━━ NEXT UP BANNER ━━
                         if let nextUp = nextUpEvent {
-                            nextUpBanner(nextUp)
-                                .padding(.horizontal, VoyagerSpacing.marginMain)
-                                .padding(.top, VoyagerSpacing.stackMedium)
-                                .staggeredAppear(index: 0, appeared: appeared)
+                            VStack(spacing: 0) {
+                                nextUpBanner(nextUp)
+                                travelDayExtras(nextUp)
+                            }
+                            .padding(.horizontal, VoyagerSpacing.marginMain)
+                            .padding(.top, VoyagerSpacing.stackMedium)
+                            .staggeredAppear(index: 0, appeared: appeared)
                         }
                         
                         // Action buttons
@@ -175,6 +205,9 @@ struct TripsListView: View {
                 }
             }
             .navigationBarHidden(true)
+            .fullScreenCover(item: $viewingPassFor) { flight in
+                BoardingPassViewer(flight: flight)
+            }
             .navigationDestination(item: $selectedTrip) { trip in
                 TripDetailView(trip: trip)
             }
@@ -213,28 +246,44 @@ struct TripsListView: View {
                 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text("NEXT UP")
+                        Text(info.isImminent ? "TODAY" : "NEXT UP")
                             .font(VoyagerFont.labelCaps)
                             .tracking(1.0)
                             .foregroundStyle(info.accentColor)
-                        
+
                         Text("•")
                             .foregroundStyle(Color.voyagerOutlineVariant)
-                        
-                        Text(TripCountdown.text(from: info.date).uppercased())
-                            .font(VoyagerFont.labelCaps)
-                            .tracking(0.6)
-                            .foregroundStyle(TripCountdown.color(from: info.date))
+
+                        if info.isImminent {
+                            // Live countdown, updating by the minute
+                            Text(info.date, style: .relative)
+                                .font(VoyagerFont.labelCaps)
+                                .tracking(0.6)
+                                .foregroundStyle(TripCountdown.color(from: info.date))
+                        } else {
+                            Text(TripCountdown.text(from: info.date).uppercased())
+                                .font(VoyagerFont.labelCaps)
+                                .tracking(0.6)
+                                .foregroundStyle(TripCountdown.color(from: info.date))
+                        }
                     }
-                    
+
                     Text(info.title)
                         .font(VoyagerFont.bodyLarge)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.voyagerOnSurface)
-                    
-                    Text(info.subtitle)
-                        .font(VoyagerFont.bodySmall)
-                        .foregroundStyle(Color.voyagerOnSurfaceVariant)
+
+                    HStack(spacing: 6) {
+                        if info.isImminent {
+                            Text(eventTimeText(info))
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(info.accentColor)
+                        }
+                        Text(info.subtitle)
+                            .font(VoyagerFont.bodySmall)
+                            .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                            .lineLimit(1)
+                    }
                 }
                 
                 Spacer()
@@ -256,7 +305,73 @@ struct TripsListView: View {
         }
         .buttonStyle(.plain)
     }
-    
+
+    /// Gate/seat and boarding pass, shown under the banner on travel day
+    @ViewBuilder
+    private func travelDayExtras(_ info: NextUpInfo) -> some View {
+        if info.isImminent, let flight = info.flight {
+            HStack(spacing: 8) {
+                if !flight.gate.isEmpty {
+                    travelPill("GATE \(flight.gate)")
+                }
+                if !flight.terminal.isEmpty {
+                    travelPill("T\(flight.terminal)")
+                }
+                if !flight.seat.isEmpty {
+                    travelPill("SEAT \(flight.seat)")
+                }
+
+                Spacer()
+
+                if flight.boardingPassData != nil {
+                    Button {
+                        viewingPassFor = flight
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 11))
+                            Text("BOARDING PASS")
+                                .font(.system(size: 10, weight: .bold))
+                                .tracking(0.5)
+                        }
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(Color.white.opacity(0.92))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 8)
+        }
+    }
+
+    private func travelPill(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .bold))
+            .tracking(0.5)
+            .foregroundStyle(Color.voyagerOnSurface)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Color.voyagerSurfaceVariant)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+    }
+
+    /// Event time in the event's own zone, labelled when it differs
+    private func eventTimeText(_ info: NextUpInfo) -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "HH:mm"
+        let zone = info.timeZone ?? info.trip.timeZone
+        fmt.timeZone = zone
+        var text = fmt.string(from: info.date)
+        if zone.identifier != TimeZone.current.identifier, let abbreviation = zone.abbreviation() {
+            text += " \(abbreviation)"
+        }
+        return text
+    }
+
     // MARK: - Empty State
     
     private var emptyState: some View {
@@ -427,4 +542,11 @@ struct NextUpInfo {
     let subtitle: String
     let date: Date
     let accentColor: Color
+    var flight: FlightSegment? = nil
+    var timeZone: TimeZone? = nil
+
+    /// Travel-day mode: the event is close enough that minutes matter
+    var isImminent: Bool {
+        date.timeIntervalSinceNow < 24 * 3600
+    }
 }
