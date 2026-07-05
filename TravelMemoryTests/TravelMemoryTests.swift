@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftData
 import Testing
 @testable import TravelMemory
 
@@ -481,6 +482,91 @@ struct GoogleMapsLinkParserTests {
         #expect(GoogleMapsLinkParser.isMapsLink("https://www.google.com/maps/place/Tantris"))
         #expect(!GoogleMapsLinkParser.isMapsLink("https://apple.com/maps-is-not-google"))
         #expect(!GoogleMapsLinkParser.isMapsLink("just some text"))
+    }
+}
+
+@MainActor
+struct DuplicateImportTests {
+
+    // Standalone model graph — hosted tests can't spin up a second
+    // SwiftData container next to the app's, and the matching logic
+    // doesn't need one.
+    private func makeTripWithExistingBookings() -> Trip {
+        let trip = Trip(
+            name: "Munich Trip", destination: "Munich",
+            startDate: Date(timeIntervalSince1970: 1760227200), // Oct 12 2025
+            endDate: Date(timeIntervalSince1970: 1760745600)
+        )
+        let flight = FlightSegment(
+            airline: "Lufthansa", flightNumber: "LH411",
+            departureAirport: "JFK", departureCity: "New York",
+            arrivalAirport: "MUC", arrivalCity: "Munich",
+            departureTime: Date(timeIntervalSince1970: 1760292600), // Oct 12 2025 18:30 UTC
+            confirmationCode: "ABCX7K"
+        )
+        trip.flights.append(flight)
+
+        let hotel = HotelBooking(
+            hotelName: "Hotel Vier Jahreszeiten Kempinski",
+            checkInDate: Date(timeIntervalSince1970: 1760227200),
+            checkOutDate: Date(timeIntervalSince1970: 1760745600)
+        )
+        trip.hotels.append(hotel)
+        return trip
+    }
+
+    private var flightEmail: (subject: String, body: String, sender: String) {
+        ("Your Flight Confirmation - LH411", """
+            Flight: Lufthansa LH411
+            Date: Oct 12, 2025
+            Departure: JFK (New York) at 18:30
+            Arrival: MUC (Munich) at 08:15
+            Booking Reference: ABCX7K
+            """, "noreply@lufthansa.com")
+    }
+
+    @Test func reimportedFlightIsFlaggedAsDuplicate() {
+        let trip = makeTripWithExistingBookings()
+        let email = flightEmail
+        let result = EmailParser.parse(subject: email.subject, body: email.body, sender: email.sender)
+
+        let warnings = EmailIngestionService.duplicateDescriptions(in: result, against: trip)
+        #expect(warnings.contains { $0.contains("LH411") })
+    }
+
+    @Test func reimportedHotelIsFlaggedAsDuplicate() {
+        let trip = makeTripWithExistingBookings()
+        let result = EmailParser.parse(
+            subject: "Your hotel booking is confirmed",
+            body: """
+                Hotel: Hotel Vier Jahreszeiten Kempinski
+                Check-in: Oct 12, 2025
+                Check-out: Oct 18, 2025
+                Confirmation: KMP884920
+                """,
+            sender: "reservations@kempinski.com"
+        )
+
+        let warnings = EmailIngestionService.duplicateDescriptions(in: result, against: trip)
+        #expect(warnings.contains { $0.contains("Kempinski") })
+    }
+
+    @Test func differentFlightIsNotFlaggedAsDuplicate() {
+        let trip = makeTripWithExistingBookings()
+        let other = EmailParser.parse(
+            subject: "Your Flight Confirmation - LH410",
+            body: """
+                Flight: Lufthansa LH410
+                Date: Oct 18, 2025
+                Departure: MUC (Munich) at 21:35
+                Arrival: JFK (New York) at 23:30
+                Booking Reference: XYZ99Q
+                """,
+            sender: "noreply@lufthansa.com"
+        )
+
+        let warnings = EmailIngestionService.duplicateDescriptions(in: other, against: trip)
+        #expect(warnings.isEmpty)
     }
 }
 

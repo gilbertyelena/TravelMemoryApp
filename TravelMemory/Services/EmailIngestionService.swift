@@ -68,6 +68,7 @@ final class EmailIngestionService: ObservableObject {
         into targetTrip: Trip? = nil
     ) -> Trip {
         let trip = targetTrip ?? findOrCreateTrip(for: result)
+        var skippedDuplicates = 0
 
         // Extend the trip's dates if the imported items fall outside them
         if targetTrip != nil {
@@ -77,6 +78,7 @@ final class EmailIngestionService: ObservableObject {
         }
 
         for flightData in result.flights {
+            if Self.isDuplicate(flight: flightData, in: trip, calendar: trip.calendar) { skippedDuplicates += 1; continue }
             let flight = FlightSegment(
                 airline: flightData.airline,
                 flightNumber: flightData.flightNumber,
@@ -102,6 +104,7 @@ final class EmailIngestionService: ObservableObject {
         }
 
         for hotelData in result.hotels {
+            if Self.isDuplicate(hotel: hotelData, in: trip, calendar: trip.calendar) { skippedDuplicates += 1; continue }
             let hotel = HotelBooking(
                 hotelName: hotelData.hotelName,
                 address: hotelData.address,
@@ -118,6 +121,7 @@ final class EmailIngestionService: ObservableObject {
         }
 
         for carData in result.carRentals {
+            if Self.isDuplicate(car: carData, in: trip, calendar: trip.calendar) { skippedDuplicates += 1; continue }
             let car = CarRentalBooking(
                 company: carData.company,
                 vehicleType: carData.vehicleType,
@@ -136,6 +140,7 @@ final class EmailIngestionService: ObservableObject {
         }
 
         for diningData in result.dining {
+            if Self.isDuplicate(dining: diningData, in: trip, calendar: trip.calendar) { skippedDuplicates += 1; continue }
             let dining = DiningReservation(
                 restaurantName: diningData.restaurantName,
                 address: diningData.address,
@@ -152,6 +157,7 @@ final class EmailIngestionService: ObservableObject {
         }
 
         for activityData in result.activities {
+            if Self.isDuplicate(activity: activityData, in: trip, calendar: trip.calendar) { skippedDuplicates += 1; continue }
             let activity = TripActivity(
                 activityName: activityData.activityName,
                 location: activityData.location,
@@ -169,6 +175,10 @@ final class EmailIngestionService: ObservableObject {
 
         // Record the source email. Low-confidence parses stay in the
         // Inbox review queue for a second look even after acceptance.
+        var issues = result.issues
+        if skippedDuplicates > 0 {
+            issues.append("Skipped \(skippedDuplicates) item\(skippedDuplicates == 1 ? "" : "s") already in this trip")
+        }
         let parsedEmail = ParsedEmail(
             subject: subject,
             senderEmail: sender,
@@ -176,7 +186,7 @@ final class EmailIngestionService: ObservableObject {
             receivedAt: .now,
             statusRaw: result.overallConfidence >= 0.7 ? "accepted" : "needsReview",
             overallConfidence: result.overallConfidence,
-            issues: result.issues
+            issues: issues
         )
         trip.parsedEmails.append(parsedEmail)
         modelContext.insert(parsedEmail)
@@ -186,6 +196,84 @@ final class EmailIngestionService: ObservableObject {
         TripNotifications.resync(trip: trip)
 
         return trip
+    }
+
+    // MARK: - Duplicate Detection
+
+    /// Human-readable descriptions of parsed items that already exist in
+    /// the trip — shown on the review screen before accepting.
+    static func duplicateDescriptions(in result: EmailParser.ParseResult, against trip: Trip) -> [String] {
+        var found: [String] = []
+        let cal = trip.calendar
+
+        for flight in result.flights where isDuplicate(flight: flight, in: trip, calendar: cal) {
+            found.append("Flight \(flight.flightNumber.isEmpty ? flight.confirmationCode : flight.flightNumber)")
+        }
+        for hotel in result.hotels where isDuplicate(hotel: hotel, in: trip, calendar: cal) {
+            found.append(hotel.hotelName.isEmpty ? "a hotel booking" : hotel.hotelName)
+        }
+        for car in result.carRentals where isDuplicate(car: car, in: trip, calendar: cal) {
+            found.append(car.company.isEmpty ? "a car rental" : car.company)
+        }
+        for dining in result.dining where isDuplicate(dining: dining, in: trip, calendar: cal) {
+            found.append(dining.restaurantName.isEmpty ? "a reservation" : dining.restaurantName)
+        }
+        for activity in result.activities where isDuplicate(activity: activity, in: trip, calendar: cal) {
+            found.append(activity.activityName.isEmpty ? "an activity" : activity.activityName)
+        }
+        return found
+    }
+
+    private static func isDuplicate(flight data: EmailParser.FlightParseData, in trip: Trip, calendar: Calendar) -> Bool {
+        trip.flights.contains { existing in
+            if !data.flightNumber.isEmpty,
+               existing.flightNumber.caseInsensitiveCompare(data.flightNumber) == .orderedSame,
+               let departure = data.departureTime,
+               calendar.isDate(existing.departureTime, inSameDayAs: departure) {
+                return true
+            }
+            if data.flightNumber.isEmpty, !data.confirmationCode.isEmpty,
+               existing.confirmationCode.caseInsensitiveCompare(data.confirmationCode) == .orderedSame {
+                return true
+            }
+            return false
+        }
+    }
+
+    private static func isDuplicate(hotel data: EmailParser.HotelParseData, in trip: Trip, calendar: Calendar) -> Bool {
+        trip.hotels.contains { existing in
+            guard !data.hotelName.isEmpty,
+                  existing.hotelName.caseInsensitiveCompare(data.hotelName) == .orderedSame else { return false }
+            guard let checkIn = data.checkIn else { return true }
+            return calendar.isDate(existing.checkInDate, inSameDayAs: checkIn)
+        }
+    }
+
+    private static func isDuplicate(car data: EmailParser.CarRentalParseData, in trip: Trip, calendar: Calendar) -> Bool {
+        trip.carRentals.contains { existing in
+            guard !data.company.isEmpty,
+                  existing.company.caseInsensitiveCompare(data.company) == .orderedSame else { return false }
+            guard let pickup = data.pickupTime else { return true }
+            return calendar.isDate(existing.pickupTime, inSameDayAs: pickup)
+        }
+    }
+
+    private static func isDuplicate(dining data: EmailParser.DiningParseData, in trip: Trip, calendar: Calendar) -> Bool {
+        trip.dining.contains { existing in
+            guard !data.restaurantName.isEmpty,
+                  existing.restaurantName.caseInsensitiveCompare(data.restaurantName) == .orderedSame else { return false }
+            guard let time = data.reservationTime else { return false }
+            return calendar.isDate(existing.reservationTime, inSameDayAs: time)
+        }
+    }
+
+    private static func isDuplicate(activity data: EmailParser.ActivityParseData, in trip: Trip, calendar: Calendar) -> Bool {
+        trip.activities.contains { existing in
+            guard !data.activityName.isEmpty,
+                  existing.activityName.caseInsensitiveCompare(data.activityName) == .orderedSame else { return false }
+            guard let start = data.startTime else { return false }
+            return calendar.isDate(existing.startTime, inSameDayAs: start)
+        }
     }
 
     /// All dates extracted by a parse, sorted ascending.
@@ -209,13 +297,13 @@ final class EmailIngestionService: ObservableObject {
         // Otherwise a dateless email would "overlap" whatever trip is
         // happening right now and merge into it.
         if let startDate = allDates.first, let endDate = allDates.last {
-            let descriptor = FetchDescriptor<Trip>(
-                predicate: #Predicate<Trip> { trip in
-                    trip.statusRaw != "completed"
-                }
-            )
+            // Plain fetch + in-memory filter: the #Predicate string
+            // comparison traps inside SwiftData on some configurations,
+            // and trip counts are tiny anyway.
+            let descriptor = FetchDescriptor<Trip>()
 
-            if let existingTrips = try? modelContext.fetch(descriptor) {
+            if let allTrips = try? modelContext.fetch(descriptor) {
+                let existingTrips = allTrips.filter { $0.statusRaw != TripStatus.completed.rawValue }
                 for trip in existingTrips {
                     // Check if dates overlap
                     let overlapStart = max(trip.startDate, startDate)

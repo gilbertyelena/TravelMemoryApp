@@ -1226,7 +1226,12 @@ struct AddItemSheet: View {
         }
 
         icsFileName = url.lastPathComponent
-        icsParseResult = CSVImporter.parse(text)
+        var parsed = CSVImporter.parse(text)
+        let duplicates = EmailIngestionService.duplicateDescriptions(in: parsed, against: trip)
+        if !duplicates.isEmpty {
+            parsed.issues.append("Already in this trip (will be skipped): \(duplicates.joined(separator: ", "))")
+        }
+        icsParseResult = parsed
         showICSResult = true
     }
 
@@ -1244,7 +1249,12 @@ struct AddItemSheet: View {
         }
 
         icsFileName = url.lastPathComponent
-        icsParseResult = ICSParser.parse(text)
+        var parsed = ICSParser.parse(text)
+        let duplicates = EmailIngestionService.duplicateDescriptions(in: parsed, against: trip)
+        if !duplicates.isEmpty {
+            parsed.issues.append("Already in this trip (will be skipped): \(duplicates.joined(separator: ", "))")
+        }
+        icsParseResult = parsed
         showICSResult = true
     }
 

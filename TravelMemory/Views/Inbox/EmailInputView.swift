@@ -176,7 +176,13 @@ struct EmailInputView: View {
         isProcessing = true
 
         Task {
-            let result = await EmailIngestionService.parseContent(subject: subject, body: emailBody, sender: sender)
+            var result = await EmailIngestionService.parseContent(subject: subject, body: emailBody, sender: sender)
+            if let trip = targetTrip {
+                let duplicates = EmailIngestionService.duplicateDescriptions(in: result, against: trip)
+                if !duplicates.isEmpty {
+                    result.issues.append("Already in this trip (will be skipped): \(duplicates.joined(separator: ", "))")
+                }
+            }
             self.parseResult = result
             self.isProcessing = false
             self.showingResult = true
