@@ -53,6 +53,7 @@ struct TripDetailView: View {
     @State private var showDeleteConfirm = false
     @State private var appeared = false
     @AppStorage("tripViewMode") private var agendaMode = false
+    @State private var shareItems: [Any]?
     /// IDs of freshly created (draft) items — deleted again if their
     /// editor is dismissed without saving.
     @State private var newItemIDs: Set<UUID> = []
@@ -167,6 +168,29 @@ struct TripDetailView: View {
                     .foregroundStyle(Color.voyagerOnSurface)
             }
             ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        shareItems = [TripExporter.plainText(for: trip)]
+                    } label: {
+                        Label("Share as Text", systemImage: "text.alignleft")
+                    }
+                    Button {
+                        if let url = TripExporter.pdfFile(for: trip) { shareItems = [url] }
+                    } label: {
+                        Label("Share PDF", systemImage: "doc.richtext")
+                    }
+                    Button {
+                        if let url = TripExporter.icsFile(for: trip) { shareItems = [url] }
+                    } label: {
+                        Label("Share Calendar (.ics)", systemImage: "calendar.badge.plus")
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundStyle(Color.voyagerPrimary)
+                }
+                .accessibilityLabel("Export itinerary")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     withAnimation(.easeOut(duration: 0.2)) { agendaMode.toggle() }
                 } label: {
@@ -235,6 +259,15 @@ struct TripDetailView: View {
         }
         .sheet(item: $editingActivity, onDismiss: { newItemIDs.removeAll() }) { activity in
             EditActivityView(activity: activity, isNew: newItemIDs.contains(activity.id))
+        }
+        .sheet(isPresented: Binding(
+            get: { shareItems != nil },
+            set: { if !$0 { shareItems = nil } }
+        )) {
+            if let items = shareItems {
+                ShareSheet(items: items)
+                    .presentationDetents([.medium, .large])
+            }
         }
         .alert("Delete Trip?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
