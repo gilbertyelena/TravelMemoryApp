@@ -420,6 +420,53 @@ struct CSVImporterTests {
     }
 }
 
+struct GoogleMapsLinkParserTests {
+
+    @Test func parsesPlaceURLWithDataBlob() throws {
+        // The !3d/!4d pair is the precise pin — preferred over the
+        // viewport center after the @
+        let url = try #require(URL(string:
+            "https://www.google.com/maps/place/Tantris+Maison+Culinaire/@48.161,11.58,15z/data=!4m6!3m5!1s0x479e75!8m2!3d48.1631899!4d11.5865861!16s"))
+        let place = try #require(GoogleMapsLinkParser.parsePlace(from: url))
+        #expect(place.name == "Tantris Maison Culinaire")
+        #expect(place.latitude != nil)
+        #expect(abs((place.latitude ?? 0) - 48.1631899) < 0.0001)
+    }
+
+    @Test func parsesPlaceURLWithViewportOnly() throws {
+        let url = try #require(URL(string:
+            "https://www.google.com/maps/place/Caf%C3%A9+Luitpold/@48.1417,11.5731,17z"))
+        let place = try #require(GoogleMapsLinkParser.parsePlace(from: url))
+        #expect(place.name == "Café Luitpold")
+        #expect(abs((place.latitude ?? 0) - 48.1417) < 0.0001)
+        #expect(abs((place.longitude ?? 0) - 11.5731) < 0.0001)
+    }
+
+    @Test func parsesQueryStyleLink() throws {
+        let url = try #require(URL(string:
+            "https://www.google.com/maps/search/?api=1&query=Hofbr%C3%A4uhaus+M%C3%BCnchen"))
+        let place = try #require(GoogleMapsLinkParser.parsePlace(from: url))
+        #expect(place.name == "Hofbräuhaus München")
+    }
+
+    @Test func searchAndDirectionsURLsAreNotPlaces() throws {
+        // Browsing the results list or directions must not trigger the
+        // capture bar
+        let search = try #require(URL(string: "https://www.google.com/maps/search/restaurants/@48.14,11.57,15z"))
+        #expect(GoogleMapsLinkParser.parsePlace(from: search) == nil)
+
+        let home = try #require(URL(string: "https://www.google.com/maps/@48.14,11.57,15z"))
+        #expect(GoogleMapsLinkParser.parsePlace(from: home) == nil)
+    }
+
+    @Test func detectsMapsLinksInSharedText() {
+        #expect(GoogleMapsLinkParser.isMapsLink("Check this out https://maps.app.goo.gl/AbC123"))
+        #expect(GoogleMapsLinkParser.isMapsLink("https://www.google.com/maps/place/Tantris"))
+        #expect(!GoogleMapsLinkParser.isMapsLink("https://apple.com/maps-is-not-google"))
+        #expect(!GoogleMapsLinkParser.isMapsLink("just some text"))
+    }
+}
+
 struct EmailParserFallbackTests {
 
     @Test func unrelatedEmailYieldsLowConfidenceAndIssue() {

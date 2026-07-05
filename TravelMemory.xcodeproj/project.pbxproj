@@ -122,14 +122,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		57ABB1752FAF66120007FDE0 /* Frameworks */ = {
+		57ABB12F2FAF66120007FDE0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		57ABB12F2FAF66120007FDE0 /* Frameworks */ = {
+		57ABB1752FAF66120007FDE0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -188,29 +188,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		57ABB1782FAF66120007FDE0 /* TravelWidget */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 57ABB17C2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "TravelWidget" */;
-			buildPhases = (
-				57ABB1772FAF66120007FDE0 /* Sources */,
-				57ABB1752FAF66120007FDE0 /* Frameworks */,
-				57ABB1762FAF66120007FDE0 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				57ABB1742FAF66120007FDE0 /* TravelWidget */,
-				57ABB1502FAF66120007FDE0 /* Shared */,
-			);
-			name = TravelWidget;
-			packageProductDependencies = (
-			);
-			productName = TravelWidget;
-			productReference = 57ABB1712FAF66120007FDE0 /* TravelWidget.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		57ABB1312FAF66120007FDE0 /* ShareExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 57ABB13E2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
@@ -232,6 +209,29 @@
 			);
 			productName = ShareExtension;
 			productReference = 57ABB1322FAF66120007FDE0 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		57ABB1782FAF66120007FDE0 /* TravelWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57ABB17C2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "TravelWidget" */;
+			buildPhases = (
+				57ABB1772FAF66120007FDE0 /* Sources */,
+				57ABB1752FAF66120007FDE0 /* Frameworks */,
+				57ABB1762FAF66120007FDE0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				57ABB1502FAF66120007FDE0 /* Shared */,
+				57ABB1742FAF66120007FDE0 /* TravelWidget */,
+			);
+			name = TravelWidget;
+			packageProductDependencies = (
+			);
+			productName = TravelWidget;
+			productReference = 57ABB1712FAF66120007FDE0 /* TravelWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		57F6B0032FA14FF400039210 /* TravelMemory */ = {
@@ -356,14 +356,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		57ABB1762FAF66120007FDE0 /* Resources */ = {
+		57ABB1302FAF66120007FDE0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		57ABB1302FAF66120007FDE0 /* Resources */ = {
+		57ABB1762FAF66120007FDE0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -394,14 +394,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		57ABB1772FAF66120007FDE0 /* Sources */ = {
+		57ABB12E2FAF66120007FDE0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		57ABB12E2FAF66120007FDE0 /* Sources */ = {
+		57ABB1772FAF66120007FDE0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -432,15 +432,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		57ABB1792FAF66120007FDE0 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 57ABB1782FAF66120007FDE0 /* TravelWidget */;
-			targetProxy = 57ABB1722FAF66120007FDE0 /* PBXContainerItemProxy */;
-		};
 		57ABB13B2FAF66120007FDE0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 57ABB1312FAF66120007FDE0 /* ShareExtension */;
 			targetProxy = 57ABB13A2FAF66120007FDE0 /* PBXContainerItemProxy */;
+		};
+		57ABB1792FAF66120007FDE0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 57ABB1782FAF66120007FDE0 /* TravelWidget */;
+			targetProxy = 57ABB1722FAF66120007FDE0 /* PBXContainerItemProxy */;
 		};
 		57F6B0152FA14FF500039210 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -455,60 +455,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		57ABB17A2FAF66120007FDE0 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = TravelWidget/TravelWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4K4F4TZU7K;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TravelWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.TravelWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		57ABB17B2FAF66120007FDE0 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = TravelWidget/TravelWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4K4F4TZU7K;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TravelWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.TravelWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		57ABB13F2FAF66120007FDE0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -555,6 +501,60 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		57ABB17A2FAF66120007FDE0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TravelWidget/TravelWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TravelWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.TravelWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		57ABB17B2FAF66120007FDE0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TravelWidget/TravelWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4K4F4TZU7K;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TravelWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alenka.TravelSteward.TravelWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -817,20 +817,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		57ABB17C2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "TravelWidget" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				57ABB17A2FAF66120007FDE0 /* Debug */,
-				57ABB17B2FAF66120007FDE0 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		57ABB13E2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				57ABB13F2FAF66120007FDE0 /* Debug */,
 				57ABB1402FAF66120007FDE0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		57ABB17C2FAF66120007FDE0 /* Build configuration list for PBXNativeTarget "TravelWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57ABB17A2FAF66120007FDE0 /* Debug */,
+				57ABB17B2FAF66120007FDE0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
