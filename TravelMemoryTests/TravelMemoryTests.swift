@@ -570,6 +570,100 @@ struct DuplicateImportTests {
     }
 }
 
+@MainActor
+struct BackupServiceTests {
+
+    private func makeContainer() throws -> ModelContainer {
+        let schema = Schema([
+            Trip.self, FlightSegment.self, HotelBooking.self, CarRentalBooking.self,
+            ParsedEmail.self, PackingCategoryModel.self, PackingItemModel.self,
+            VaultDocument.self, DiningReservation.self, TripActivity.self,
+        ])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        return try ModelContainer(for: schema, configurations: [config])
+    }
+
+    private func seedTrip(in context: ModelContext) -> Trip {
+        let trip = Trip(name: "Munich Trip", destination: "Munich",
+                        startDate: Date(timeIntervalSince1970: 1_760_000_000),
+                        endDate: Date(timeIntervalSince1970: 1_760_500_000))
+        trip.timeZoneID = "Europe/Berlin"
+        context.insert(trip)
+
+        let flight = FlightSegment(airline: "Ryanair", flightNumber: "FR1885",
+                                   departureAirport: "STN", arrivalAirport: "MUC",
+                                   seat: "14A", confirmationCode: "ABCX7K")
+        flight.cost = 45
+        flight.currencyCode = "GBP"
+        flight.timeZoneID = "Europe/London"
+        flight.arrivalTimeZoneID = "Europe/Berlin"
+        flight.boardingPassData = Data([0xDE, 0xAD, 0xBE, 0xEF])
+        trip.flights.append(flight)
+
+        let dining = DiningReservation(restaurantName: "Tantris", phone: "+49 89 123")
+        dining.status = .idea
+        trip.dining.append(dining)
+
+        let category = PackingCategoryModel(name: "Essentials")
+        category.items.append(PackingItemModel(name: "Passport", isPacked: true))
+        trip.packingCategories.append(category)
+
+        let document = VaultDocument(title: "Passport", categoryRaw: "passport",
+                                     imageData: Data([1, 2, 3]))
+        context.insert(document)
+        return trip
+    }
+
+    @Test func roundTripPreservesEverything() throws {
+        let source = try makeContainer()
+        let trip = seedTrip(in: source.mainContext)
+        try source.mainContext.save()
+
+        let url = try BackupService.export(context: source.mainContext)
+
+        // Fresh, empty database — the post-reinstall scenario
+        let target = try makeContainer()
+        let summary = try BackupService.restore(from: url, context: target.mainContext)
+
+        #expect(summary.tripsRestored == 1)
+        #expect(summary.documentsRestored == 1)
+
+        let trips = try target.mainContext.fetch(FetchDescriptor<Trip>())
+        let restored = try #require(trips.first)
+        #expect(restored.id == trip.id)
+        #expect(restored.timeZoneID == "Europe/Berlin")
+
+        let flight = try #require(restored.flights.first)
+        #expect(flight.flightNumber == "FR1885")
+        #expect(flight.cost == 45)
+        #expect(flight.timeZoneID == "Europe/London")
+        #expect(flight.boardingPassData == Data([0xDE, 0xAD, 0xBE, 0xEF]))
+
+        #expect(restored.dining.first?.status == .idea)
+        #expect(restored.dining.first?.phone == "+49 89 123")
+        #expect(restored.packingCategories.first?.items.first?.isPacked == true)
+
+        let documents = try target.mainContext.fetch(FetchDescriptor<VaultDocument>())
+        #expect(documents.first?.imageData == Data([1, 2, 3]))
+    }
+
+    @Test func restoringTwiceNeverDuplicates() throws {
+        let container = try makeContainer()
+        _ = seedTrip(in: container.mainContext)
+        try container.mainContext.save()
+
+        let url = try BackupService.export(context: container.mainContext)
+        let summary = try BackupService.restore(from: url, context: container.mainContext)
+
+        #expect(summary.tripsRestored == 0)
+        #expect(summary.tripsSkipped == 1)
+        #expect(summary.documentsSkipped == 1)
+
+        let trips = try container.mainContext.fetch(FetchDescriptor<Trip>())
+        #expect(trips.count == 1)
+    }
+}
+
 struct EmailParserFallbackTests {
 
     @Test func unrelatedEmailYieldsLowConfidenceAndIssue() {

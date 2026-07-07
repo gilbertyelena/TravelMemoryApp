@@ -7,9 +7,18 @@
 //
 
 import SwiftUI
+import SwiftData
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("remindersEnabled") private var remindersEnabled = true
+
+    // Backup state
+    @State private var backupShareURL: URL?
+    @State private var showRestorePicker = false
+    @State private var restoreMessage: String?
+    @State private var backupError: String?
     @AppStorage("checkinLeadHours") private var checkinLeadHours = 24
     @AppStorage("reminderLeadHours") private var reminderLeadHours = 2
     @AppStorage("defaultCurrencyCode") private var defaultCurrency = ""
@@ -80,6 +89,60 @@ struct SettingsView: View {
                     .padding(14)
                 }
 
+                section("BACKUP") {
+                    Button {
+                        exportBackup()
+                    } label: {
+                        HStack(spacing: 12) {
+                            settingIcon("square.and.arrow.up")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Export backup")
+                                    .font(VoyagerFont.bodyMedium)
+                                    .foregroundStyle(Color.voyagerOnSurface)
+                                Text("Every trip and vault document in one file — save it to iCloud Drive")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer()
+                        }
+                        .padding(14)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider().padding(.leading, 54).opacity(0.3)
+
+                    Button {
+                        showRestorePicker = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            settingIcon("square.and.arrow.down")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Restore from backup")
+                                    .font(VoyagerFont.bodyMedium)
+                                    .foregroundStyle(Color.voyagerOnSurface)
+                                Text("Merges by id — never creates duplicates")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                            }
+                            Spacer()
+                        }
+                        .padding(14)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if let message = restoreMessage ?? backupError {
+                        Text(message)
+                            .font(.system(size: 12))
+                            .foregroundStyle(backupError == nil ? Color.voyagerPrimaryAccent : Color.voyagerError)
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+
                 section("SYNC") {
                     HStack(spacing: 12) {
                         settingIcon(CloudSyncConfig.isEnabled ? "icloud.fill" : "icloud.slash")
@@ -116,6 +179,52 @@ struct SettingsView: View {
             .padding(.bottom, 120)
         }
         .background(Color.voyagerBackground)
+        .sheet(isPresented: Binding(
+            get: { backupShareURL != nil },
+            set: { if !$0 { backupShareURL = nil } }
+        )) {
+            if let url = backupShareURL {
+                ShareSheet(items: [url])
+                    .presentationDetents([.medium, .large])
+            }
+        }
+        .fileImporter(isPresented: $showRestorePicker, allowedContentTypes: [.json, .plainText]) { result in
+            restoreMessage = nil
+            backupError = nil
+            switch result {
+            case .success(let url):
+                restoreBackup(from: url)
+            case .failure(let error):
+                backupError = error.localizedDescription
+            }
+        }
+    }
+
+    // MARK: - Backup Actions
+
+    private func exportBackup() {
+        restoreMessage = nil
+        backupError = nil
+        do {
+            backupShareURL = try BackupService.export(context: modelContext)
+        } catch {
+            backupError = "Export failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func restoreBackup(from url: URL) {
+        do {
+            let summary = try BackupService.restore(from: url, context: modelContext)
+            restoreMessage = summary.text
+
+            // Re-arm reminders and the widget for restored trips
+            if let trips = try? modelContext.fetch(FetchDescriptor<Trip>()) {
+                for trip in trips { TripNotifications.resync(trip: trip) }
+            }
+            WidgetSnapshotService.refresh(context: modelContext)
+        } catch {
+            backupError = error.localizedDescription
+        }
     }
 
     // MARK: - Building Blocks
