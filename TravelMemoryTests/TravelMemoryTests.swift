@@ -664,6 +664,48 @@ struct BackupServiceTests {
     }
 }
 
+struct BookingShareTests {
+
+    @Test func bookingShareLinkBecomesHotelNotFlight() async {
+        // Regression: sharing a hotel from the Booking.com app produced a
+        // garbage flight — URL query blobs looked like airport codes.
+        let body = "Check out this hotel! https://www.booking.com/hotel/de/vier-jahreszeiten-kempinski-muenchen.html?aid=304142&label=gen173nr-1FCAEoggI46AdIM1gEaFCIAQGYAQm4ARfIAQ"
+        let result = await EmailIngestionService.parseContent(subject: "Shared Content", body: body, sender: "")
+
+        #expect(result.flights.isEmpty)
+        #expect(result.hotels.count == 1)
+        let name = result.hotels.first?.hotelName ?? ""
+        #expect(name.localizedCaseInsensitiveContains("Kempinski"))
+    }
+
+    @Test func slugYieldsReadableHotelName() throws {
+        let url = try #require(URL(string: "https://www.booking.com/hotel/de/vier-jahreszeiten-kempinski-muenchen.en-gb.html"))
+        #expect(BookingShareImporter.nameFromSlug(of: url) == "Vier Jahreszeiten Kempinski Muenchen")
+    }
+
+    @Test func marketingTextConjuresNoFlights() {
+        // Strict generic detection: unknown 3-letter words and unknown
+        // two-letter+digit runs are not flights
+        let result = EmailParser.parse(
+            subject: "Shared Content",
+            body: "Save BIG on TOP stays! Use code XY 2026 for the WOW deal.",
+            sender: ""
+        )
+        #expect(result.flights.isEmpty)
+    }
+
+    @Test func realFlightShareStillDetected() {
+        // Tightening must not break genuine generic flight content
+        let result = EmailParser.parse(
+            subject: "Fwd: itinerary",
+            body: "LH 411 from FRA to JFK on Oct 12, 2025 at 10:30",
+            sender: "friend@example.org"
+        )
+        #expect(result.flights.count == 1)
+        #expect(result.flights.first?.flightNumber == "LH411")
+    }
+}
+
 struct EmailParserFallbackTests {
 
     @Test func unrelatedEmailYieldsLowConfidenceAndIssue() {

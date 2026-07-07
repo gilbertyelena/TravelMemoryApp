@@ -316,7 +316,15 @@ struct EmailParser {
         return result
     }
 
-    private static func parseFlightDetails(from text: String) -> FlightParseData {
+    /// URLs are stripped before pattern scanning — their query blobs are
+    /// full of uppercase letter/digit runs that fake airport codes and
+    /// flight numbers (the Booking.com share-link bug).
+    private static func strippingURLs(_ text: String) -> String {
+        text.replacingOccurrences(of: #"https?://\S+"#, with: " ", options: .regularExpression)
+    }
+
+    private static func parseFlightDetails(from rawText: String) -> FlightParseData {
+        let text = strippingURLs(rawText)
         var flight = FlightParseData(
             airline: "", flightNumber: "",
             departureAirport: "", departureCity: "",
@@ -544,11 +552,16 @@ struct EmailParser {
         var result = ParseResult()
         let combinedText = subject + "\n" + body
         
-        // Check if it looks like it has flight info
-        let hasAirportCodes = allMatches(in: combinedText, pattern: #"\b([A-Z]{3})\b"#)
-            .filter { isLikelyAirportCode($0) }
+        // Check if it looks like it has flight info. Generic content gets
+        // the STRICT tests: recognised IATA codes and known airline
+        // designators only, with URLs stripped — marketing text and link
+        // parameters must not conjure flights.
+        let scanText = strippingURLs(combinedText)
+        let hasAirportCodes = allMatches(in: scanText, pattern: #"\b([A-Z]{3})\b"#)
+            .filter { knownAirportCodes.contains($0) }
             .count >= 2
-        let hasFlightNumber = firstMatch(in: combinedText, pattern: #"\b[A-Z]{2}\s?\d{1,4}\b"#) != nil
+        let hasFlightNumber = allMatches(in: scanText, pattern: #"\b([A-Z]{2})\s?(\d{1,4})\b"#)
+            .contains { airlinesByCode.keys.contains(String($0.replacingOccurrences(of: " ", with: "").prefix(2))) }
         
         if hasAirportCodes || hasFlightNumber {
             result.flights = parseFlights(from: combinedText)
@@ -713,19 +726,24 @@ struct EmailParser {
         return nil
     }
     
+    /// Recognised IATA codes — used strictly by the generic parser and
+    /// loosely (with the stopword filter) by confirmed flight emails
+    static let knownAirportCodes = Set([
+        "JFK", "LAX", "ORD", "SFO", "MIA", "ATL", "DFW", "DEN", "SEA", "BOS",
+        "LHR", "LGW", "STN", "LTN", "CDG", "FRA", "MUC", "AMS", "FCO", "MAD",
+        "BCN", "IST", "DXB", "SIN", "HKG", "NRT", "HND", "ICN", "BKK", "SYD",
+        "MEL", "AKL", "EWR", "IAD", "IAH", "PHX", "MSP", "DTW", "CLT", "MCO",
+        "TPA", "PHL", "ZRH", "VIE", "CPH", "OSL", "ARN", "HEL", "DUB", "EDI",
+        "LIS", "GVA", "YYZ", "YVR", "MEX", "GRU", "EZE", "BOG", "SCL", "LIM",
+        "PTY", "CUN", "MAN", "BHX", "BRS", "GLA", "NCE", "LYS", "MXP", "LIN",
+        "NAP", "VCE", "PMI", "AGP", "ALC", "SVQ", "OPO", "ATH", "SKG", "PRG",
+        "BUD", "WAW", "KRK", "OTP", "SOF", "BEG", "ZAG", "LJU", "TLV", "CAI"
+    ])
+
     /// Checks if a 3-letter code is likely an IATA airport code
     private static func isLikelyAirportCode(_ code: String) -> Bool {
-        let commonCodes = Set([
-            "JFK", "LAX", "ORD", "SFO", "MIA", "ATL", "DFW", "DEN", "SEA", "BOS",
-            "LHR", "LGW", "CDG", "FRA", "MUC", "AMS", "FCO", "MAD", "BCN", "IST",
-            "DXB", "SIN", "HKG", "NRT", "HND", "ICN", "BKK", "SYD", "MEL", "AKL",
-            "EWR", "IAD", "IAH", "PHX", "MSP", "DTW", "CLT", "MCO", "TPA", "PHL",
-            "ZRH", "VIE", "CPH", "OSL", "ARN", "HEL", "DUB", "EDI", "LIS", "GVA",
-            "YYZ", "YVR", "MEX", "GRU", "EZE", "BOG", "SCL", "LIM", "PTY", "CUN"
-        ])
-        
         // If it's a known code, definitely an airport
-        if commonCodes.contains(code) { return true }
+        if knownAirportCodes.contains(code) { return true }
         
         // Filter out common English 3-letter words
         let commonWords = Set([

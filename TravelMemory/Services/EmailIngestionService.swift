@@ -52,6 +52,21 @@ final class EmailIngestionService: ObservableObject {
             }
             return result
         }
+
+        // A hotel shared from the Booking.com app arrives as a link —
+        // import it as a hotel, not a guessy email parse
+        if BookingShareImporter.isBookingLink(body), sender.isEmpty {
+            if let hotel = await BookingShareImporter.hotelImport(from: body) {
+                var result = EmailParser.ParseResult()
+                result.hotels.append(hotel)
+                result.overallConfidence = hotel.confidence
+                result.suggestedDestination = hotel.hotelName
+                result.suggestedTripName = "Trip"
+                result.issues.append("Imported from a Booking.com link — set the check-in dates after accepting.")
+                return result
+            }
+        }
+
         return parse(subject: subject, body: body, sender: sender)
     }
 
