@@ -145,6 +145,30 @@ class ShareViewController: SLComposeServiceViewController {
                     }
                 }
                 
+                // Handle PDF confirmations (Booking.com "Share PDF",
+                // airline e-tickets) — extract the text for parsing
+                if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
+                    provider.loadItem(forTypeIdentifier: UTType.pdf.identifier, options: nil) { [weak self] item, _ in
+                        var text: String?
+                        var name: String?
+                        if let url = item as? URL {
+                            text = PDFTextExtractor.text(from: url)
+                            name = url.deletingPathExtension().lastPathComponent
+                        } else if let data = item as? Data {
+                            text = PDFTextExtractor.text(from: data)
+                        }
+                        if let text {
+                            DispatchQueue.main.async {
+                                self?.emailBody = text
+                                if let name, self?.emailSubject.isEmpty != false {
+                                    self?.emailSubject = name
+                                }
+                                self?.reloadConfigurationItems()
+                            }
+                        }
+                    }
+                }
+
                 // Handle HTML content (rich email bodies)
                 if provider.hasItemConformingToTypeIdentifier(UTType.html.identifier) {
                     provider.loadItem(forTypeIdentifier: UTType.html.identifier, options: nil) { [weak self] item, _ in

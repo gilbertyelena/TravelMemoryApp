@@ -174,11 +174,13 @@ struct EmailParser {
     // MARK: - Detection
     
     private static func detectFlightEmail(subject: String, body: String, sender: String) -> Bool {
+        // NB: no generic terms like "booking confirmation" here — hotel
+        // confirmations use them too and would be misrouted to flights
         let flightKeywords = [
-            "flight confirmation", "booking confirmation", "e-ticket",
+            "flight confirmation", "e-ticket",
             "itinerary receipt", "boarding pass", "flight reservation",
-            "your trip", "flight details", "air reservation",
-            "ticket confirmation"
+            "flight details", "air reservation",
+            "ticket confirmation", "flight booking"
         ]
         let airlineSenders = [
             "united.com", "delta.com", "aa.com", "southwest.com",
@@ -212,8 +214,11 @@ struct EmailParser {
         
         let subjectMatch = hotelKeywords.contains { subject.lowercased().contains($0) }
         let senderMatch = hotelSenders.contains { sender.lowercased().contains($0) }
-        
-        return subjectMatch || senderMatch
+        let lowered = body.lowercased()
+        let bodyMatch = (lowered.contains("check-in") || lowered.contains("check in"))
+            && (lowered.contains("check-out") || lowered.contains("check out"))
+
+        return subjectMatch || senderMatch || bodyMatch
     }
     
     private static func detectCarRentalEmail(subject: String, body: String, sender: String) -> Bool {
@@ -613,8 +618,12 @@ struct EmailParser {
         return String(text[matchRange])
     }
 
-    private static func allMatches(in text: String, pattern: String) -> [String] {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
+    private static func allMatches(
+        in text: String,
+        pattern: String,
+        options: NSRegularExpression.Options = []
+    ) -> [String] {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else { return [] }
         let range = NSRange(text.startIndex..., in: text)
         return regex.matches(in: text, options: [], range: range).compactMap {
             guard let matchRange = Range($0.range, in: text) else { return nil }
@@ -711,19 +720,33 @@ struct EmailParser {
             #"(?:confirmation|booking)\s*(?:#|:)\s*(\d{6,12})"#,
         ]
 
+        // Words that follow "confirmation"/"booking" in prose and must
+        // not be mistaken for codes ("BOOKING CONFIRMATION\n\nHOTEL ...")
+        let stopwords: Set<String> = [
+            "HOTEL", "HOTELS", "CHECK", "TOTAL", "GUEST", "GUESTS",
+            "NIGHT", "NIGHTS", "ROOMS", "EMAIL", "PHONE", "DATES",
+            "NUMBER", "DETAILS", "PLEASE", "THANK", "THANKS"
+        ]
+
+        var lettersOnlyCandidate: String?
         for pattern in patterns {
             // Text is uppercased so the keyword patterns need case-insensitive
             // matching; the code itself stays [A-Z0-9].
-            if let match = firstMatch(in: text.uppercased(), pattern: pattern, options: .caseInsensitive) {
-                // Extract just the code part
+            for match in allMatches(in: text.uppercased(), pattern: pattern, options: .caseInsensitive) {
                 let components = match.components(separatedBy: CharacterSet.alphanumerics.inverted)
-                if let code = components.last, code.count >= 5 {
+                guard let code = components.last, code.count >= 5, !stopwords.contains(code) else { continue }
+                // Codes with digits are near-certain; letters-only ones
+                // (airline PNRs) are kept as a fallback
+                if code.contains(where: \.isNumber) {
                     return code
+                }
+                if lettersOnlyCandidate == nil {
+                    lettersOnlyCandidate = code
                 }
             }
         }
 
-        return nil
+        return lettersOnlyCandidate
     }
     
     /// Recognised IATA codes — used strictly by the generic parser and

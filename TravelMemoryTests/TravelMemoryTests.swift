@@ -9,6 +9,7 @@
 import Foundation
 import SwiftData
 import Testing
+import UIKit
 @testable import TravelMemory
 
 struct EmailParserFlightTests {
@@ -714,6 +715,58 @@ struct BookingShareTests {
         )
         #expect(result.flights.count == 1)
         #expect(result.flights.first?.flightNumber == "LH411")
+    }
+}
+
+struct PDFImportTests {
+
+    private let confirmationText = """
+        Booking.com — Booking Confirmation
+
+        Hotel Vier Jahreszeiten Kempinski
+        Maximilianstrasse 17, 80539 Munich
+
+        Check-in: Oct 12, 2025
+        Check-out: Oct 18, 2025
+        Confirmation: KMP884920
+        """
+
+    @Test func pdfTextRoundTripsThroughExtractor() throws {
+        // Render real text into a PDF, then extract it back
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        let data = renderer.pdfData { context in
+            context.beginPage()
+            confirmationText.draw(
+                in: pageRect.insetBy(dx: 40, dy: 40),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 12)]
+            )
+        }
+
+        #expect(PDFTextExtractor.isPDF(data))
+        let extracted = try #require(PDFTextExtractor.text(from: data))
+        #expect(extracted.contains("Kempinski"))
+        #expect(extracted.contains("Check-in"))
+    }
+
+    @Test func bookingPDFTextParsesAsHotelWithDates() throws {
+        // A shared PDF arrives as its extracted text — must become a
+        // dated hotel booking, not a flight or junk
+        let result = EmailIngestionService.parse(
+            subject: "Booking Confirmation.pdf",
+            body: confirmationText,
+            sender: ""
+        )
+
+        #expect(result.flights.isEmpty)
+        #expect(result.hotels.count == 1)
+        let hotel = try #require(result.hotels.first)
+        #expect(hotel.hotelName.localizedCaseInsensitiveContains("Kempinski"))
+        #expect(hotel.confirmationCode == "KMP884920")
+
+        let cal = Calendar.current
+        let checkIn = try #require(hotel.checkIn)
+        #expect(cal.component(.day, from: checkIn) == 12)
     }
 }
 

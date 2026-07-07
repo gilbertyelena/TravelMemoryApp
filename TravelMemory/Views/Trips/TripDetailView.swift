@@ -1052,9 +1052,9 @@ struct AddItemSheet: View {
     @State private var showICSResult = false
     @State private var icsImportError: String?
 
-    /// Types accepted by the shared import picker (.ics and CSV)
+    /// Types accepted by the shared import picker (.ics, CSV, PDF)
     private var importFileTypes: [UTType] {
-        var types: [UTType] = [.commaSeparatedText, .plainText]
+        var types: [UTType] = [.commaSeparatedText, .plainText, .pdf]
         if let ics = UTType(filenameExtension: "ics") { types.append(ics) }
         if let mime = UTType(mimeType: "text/calendar") { types.append(mime) }
         return types
@@ -1082,7 +1082,7 @@ struct AddItemSheet: View {
                         showCalendarImport = true
                     }
 
-                    addButton(icon: "doc.badge.arrow.up", title: "Import a File (.ics / CSV)", subtitle: "A calendar attachment or a spreadsheet export") {
+                    addButton(icon: "doc.badge.arrow.up", title: "Import a File (.ics / CSV / PDF)", subtitle: "A calendar attachment, spreadsheet, or PDF confirmation") {
                         showFilePicker = true
                     }
 
@@ -1220,18 +1220,30 @@ struct AddItemSheet: View {
         .preferredColorScheme(.dark)
     }
 
-    /// Reads a picked file and routes by content: calendar payloads go
-    /// to the ICS parser, everything else is treated as a spreadsheet.
+    /// Reads a picked file and routes by content: PDFs get their text
+    /// extracted and parsed like an email, calendar payloads go to the
+    /// ICS parser, everything else is treated as a spreadsheet.
     private func importFile(at url: URL) {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+
+        icsFileName = url.lastPathComponent
+
+        if let data = try? Data(contentsOf: url), PDFTextExtractor.isPDF(data) {
+            guard let text = PDFTextExtractor.text(from: data) else {
+                icsImportError = "Couldn't read text from \(url.lastPathComponent) — it may be a scanned image."
+                return
+            }
+            icsParseResult = EmailIngestionService.parse(subject: url.lastPathComponent, body: text, sender: "")
+            showICSResult = true
+            return
+        }
 
         guard let text = try? String(contentsOf: url, encoding: .utf8) else {
             icsImportError = "Could not read \(url.lastPathComponent)"
             return
         }
 
-        icsFileName = url.lastPathComponent
         icsParseResult = ICSParser.isCalendar(text) ? ICSParser.parse(text) : CSVImporter.parse(text)
         showICSResult = true
     }
