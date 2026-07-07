@@ -1065,6 +1065,9 @@ struct AddItemSheet: View {
             ZStack {
                 Color.voyagerBackground.ignoresSafeArea()
 
+                // Scrollable: with three import options plus five item
+                // types, the list outgrows smaller screens
+                ScrollView(showsIndicators: false) {
                 VStack(spacing: VoyagerSpacing.stackMedium) {
                     Text("Add to Trip")
                         .font(VoyagerFont.headlineMedium)
@@ -1162,10 +1165,10 @@ struct AddItemSheet: View {
                             onActivityCreated?(activity)
                         }
                     }
-                    
-                    Spacer()
                 }
                 .padding(.horizontal, VoyagerSpacing.marginMain)
+                .padding(.bottom, 32)
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
