@@ -17,9 +17,17 @@ struct BookingShareImporter {
         text.lowercased().contains("booking.com")
     }
 
+    /// Booking.com flight links carry no itinerary data — no numbers,
+    /// no times — so they can't be imported and must not be mistaken
+    /// for hotel pages.
+    static func isFlightLink(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        return lowered.contains("flights.booking.com") || lowered.contains("booking.com/flights")
+    }
+
     /// Builds a hotel parse from shared Booking.com content.
     static func hotelImport(from text: String) async -> EmailParser.HotelParseData? {
-        guard let url = firstURL(in: text) else { return nil }
+        guard !isFlightLink(text), let url = firstURL(in: text) else { return nil }
 
         // Follow share-shortlink redirects (booking.com/Share-xxxx)
         var resolved = url

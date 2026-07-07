@@ -678,6 +678,17 @@ struct BookingShareTests {
         #expect(name.localizedCaseInsensitiveContains("Kempinski"))
     }
 
+    @Test func bookingFlightLinkGetsGuidanceNotGarbage() async {
+        // Flight links carry no itinerary data — the user is pointed to
+        // the email/calendar paths instead of getting a fake hotel
+        let body = "My flights https://flights.booking.com/flights/LON.CITY-MUC.AIRPORT/checkout?aid=123"
+        let result = await EmailIngestionService.parseContent(subject: "Shared Content", body: body, sender: "")
+
+        #expect(result.flights.isEmpty)
+        #expect(result.hotels.isEmpty)
+        #expect(result.issues.contains { $0.contains("confirmation email") })
+    }
+
     @Test func slugYieldsReadableHotelName() throws {
         let url = try #require(URL(string: "https://www.booking.com/hotel/de/vier-jahreszeiten-kempinski-muenchen.en-gb.html"))
         #expect(BookingShareImporter.nameFromSlug(of: url) == "Vier Jahreszeiten Kempinski Muenchen")

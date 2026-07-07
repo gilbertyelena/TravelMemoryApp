@@ -53,6 +53,15 @@ final class EmailIngestionService: ObservableObject {
             return result
         }
 
+        // Booking.com FLIGHT links contain no itinerary data at all —
+        // explain the working path instead of importing garbage
+        if BookingShareImporter.isFlightLink(body) {
+            var result = EmailParser.ParseResult()
+            result.overallConfidence = 0.1
+            result.issues.append("Booking.com flight links don't contain your flight details. Instead: open the confirmation email and use Paste Booking Confirmation, or Import from Calendar if the flight is in your calendar.")
+            return result
+        }
+
         // A hotel shared from the Booking.com app arrives as a link —
         // import it as a hotel, not a guessy email parse
         if BookingShareImporter.isBookingLink(body), sender.isEmpty {
