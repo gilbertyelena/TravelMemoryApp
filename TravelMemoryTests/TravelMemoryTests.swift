@@ -731,6 +731,20 @@ struct PDFImportTests {
         Confirmation: KMP884920
         """
 
+    /// The realistic Booking.com PDF layout: unbranded property in the
+    /// headline, weekday + full-month dates, dotted confirmation number
+    private let realisticBookingPDF = """
+        Hotel Bergblick Garni
+        Bergstrasse 12, 82467 Garmisch, Germany
+
+        YOUR RESERVATION IS CONFIRMED
+        Check-in: Wednesday, 15 October 2025 (from 15:00)
+        Check-out: Saturday, 18 October 2025 (until 11:00)
+        Confirmation number: 3712.456.789
+        PIN code: 1234
+        Booked via Booking.com
+        """
+
     @Test func pdfTextRoundTripsThroughExtractor() throws {
         // Render real text into a PDF, then extract it back
         let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)
@@ -750,8 +764,6 @@ struct PDFImportTests {
     }
 
     @Test func bookingPDFTextParsesAsHotelWithDates() throws {
-        // A shared PDF arrives as its extracted text — must become a
-        // dated hotel booking, not a flight or junk
         let result = EmailIngestionService.parse(
             subject: "Booking Confirmation.pdf",
             body: confirmationText,
@@ -767,6 +779,32 @@ struct PDFImportTests {
         let cal = Calendar.current
         let checkIn = try #require(hotel.checkIn)
         #expect(cal.component(.day, from: checkIn) == 12)
+    }
+
+    @Test func realisticBookingPDFParsesCompletely() throws {
+        // Regression for the reported wrong-hotel/wrong-date share:
+        // headline name, anchored full-month dates, dotted number
+        let result = EmailIngestionService.parse(
+            subject: "Confirmation.pdf",
+            body: realisticBookingPDF,
+            sender: ""
+        )
+
+        #expect(result.flights.isEmpty)
+        let hotel = try #require(result.hotels.first)
+        #expect(hotel.hotelName == "Hotel Bergblick Garni")
+        #expect(hotel.confirmationCode == "3712.456.789")
+
+        let cal = Calendar.current
+        let checkIn = try #require(hotel.checkIn)
+        #expect(cal.component(.day, from: checkIn) == 15)
+        #expect(cal.component(.month, from: checkIn) == 10)
+        #expect(cal.component(.hour, from: checkIn) == 15)
+
+        let checkOut = try #require(hotel.checkOut)
+        #expect(cal.component(.day, from: checkOut) == 18)
+
+        #expect(result.overallConfidence >= 0.7)
     }
 }
 

@@ -134,6 +134,7 @@ struct EmailInputView: View {
                 if let result = parseResult {
                     ParseResultView(
                         result: result,
+                        sourceText: emailBody,
                         onAccept: {
                             // Nothing was persisted during parsing —
                             // commit only on explicit accept.
@@ -231,8 +232,12 @@ struct EmailInputView: View {
 
 struct ParseResultView: View {
     let result: EmailParser.ParseResult
+    /// Raw text the parse came from — offered for copying when results
+    /// look wrong, so the exact input can be reported and fixed
+    var sourceText: String? = nil
     var onAccept: () -> Void
     var onDiscard: () -> Void
+    @State private var copiedSource = false
     
     var body: some View {
         NavigationStack {
@@ -294,6 +299,28 @@ struct ParseResultView: View {
                                 .padding(12)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color.voyagerTertiary.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+                            }
+                        }
+
+                        // Escape hatch for bad parses: grab exactly what
+                        // the app saw, to report or paste elsewhere
+                        if let sourceText, result.overallConfidence < 0.7 {
+                            Button {
+                                UIPasteboard.general.string = sourceText
+                                copiedSource = true
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: copiedSource ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 12))
+                                    Text(copiedSource ? "COPIED" : "COPY IMPORTED TEXT")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .tracking(0.5)
+                                }
+                                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color.voyagerSurfaceContainerLow)
                                 .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
                             }
                         }

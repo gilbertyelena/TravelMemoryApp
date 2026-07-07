@@ -91,6 +91,7 @@ class ShareViewController: SLComposeServiceViewController {
                             DispatchQueue.main.async {
                                 self?.emailBody = text
                                 self?.reloadConfigurationItems()
+                                self?.validateContent()
                             }
                         }
                     }
@@ -140,6 +141,7 @@ class ShareViewController: SLComposeServiceViewController {
                             DispatchQueue.main.async {
                                 self?.emailBody = calendarText
                                 self?.reloadConfigurationItems()
+                                self?.validateContent()
                             }
                         }
                     }
@@ -149,21 +151,29 @@ class ShareViewController: SLComposeServiceViewController {
                 // airline e-tickets) — extract the text for parsing
                 if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
                     provider.loadItem(forTypeIdentifier: UTType.pdf.identifier, options: nil) { [weak self] item, _ in
-                        var text: String?
-                        var name: String?
-                        if let url = item as? URL {
-                            text = PDFTextExtractor.text(from: url)
-                            name = url.deletingPathExtension().lastPathComponent
-                        } else if let data = item as? Data {
-                            text = PDFTextExtractor.text(from: data)
-                        }
-                        if let text {
+                        // PDF parsing can take a moment on big files —
+                        // keep it firmly off the main thread
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            var text: String?
+                            var name: String?
+                            if let url = item as? URL {
+                                let accessing = url.startAccessingSecurityScopedResource()
+                                defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+                                text = PDFTextExtractor.text(from: url)
+                                name = url.deletingPathExtension().lastPathComponent
+                            } else if let data = item as? Data {
+                                text = PDFTextExtractor.text(from: data)
+                            }
+                            guard let text else { return }
                             DispatchQueue.main.async {
                                 self?.emailBody = text
                                 if let name, self?.emailSubject.isEmpty != false {
                                     self?.emailSubject = name
                                 }
                                 self?.reloadConfigurationItems()
+                                // Re-run isContentValid so Post enables
+                                // without the user typing anything
+                                self?.validateContent()
                             }
                         }
                     }

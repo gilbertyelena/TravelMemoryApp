@@ -29,6 +29,7 @@ struct PendingEmailProcessView: View {
                 } else if let result = parseResult {
                     ParseResultView(
                         result: result,
+                        sourceText: email.body,
                         onAccept: {
                             // Nothing was persisted during parsing —
                             // commit only on explicit accept.

@@ -432,7 +432,15 @@ struct EmailParser {
         )
         
         var confidenceBoost = 0.0
-        
+
+        // Booking.com confirmations put the property name in the headline —
+        // take it from the top lines before falling back to brand matching
+        if text.localizedCaseInsensitiveContains("booking.com"),
+           let headline = leadingPropertyName(in: text) {
+            hotel.hotelName = headline
+            confidenceBoost += 0.2
+        }
+
         // Extract hotel name — look for common patterns
         let hotelBrands = [
             "Marriott", "Hilton", "Hyatt", "Holiday Inn", "Sheraton",
@@ -442,7 +450,7 @@ struct EmailParser {
             "Radisson", "Best Western", "Hampton Inn", "Courtyard"
         ]
         
-        for brand in hotelBrands {
+        for brand in hotelBrands where hotel.hotelName.isEmpty {
             if text.localizedCaseInsensitiveContains(brand) {
                 // Capture the full name around the brand, staying on one
                 // line and stopping at punctuation ("Hotel Vier
@@ -467,15 +475,28 @@ struct EmailParser {
             }
         }
         
-        // Extract dates
-        let dates = extractDates(from: text)
-        if dates.count >= 2 {
-            hotel.checkIn = dates[0]
-            hotel.checkOut = dates[1]
-            confidenceBoost += 0.2
-        } else if let firstDate = dates.first {
-            hotel.checkIn = firstDate
-            confidenceBoost += 0.1
+        // Anchored dates first: the values right after "check-in" /
+        // "check-out" labels beat positional guessing every time
+        if let anchoredIn = dateNear(keyword: "check-in", in: text) ?? dateNear(keyword: "check in", in: text) {
+            hotel.checkIn = anchoredIn
+            confidenceBoost += 0.15
+        }
+        if let anchoredOut = dateNear(keyword: "check-out", in: text) ?? dateNear(keyword: "check out", in: text) {
+            hotel.checkOut = anchoredOut
+            confidenceBoost += 0.15
+        }
+
+        // Positional fallback
+        if hotel.checkIn == nil {
+            let dates = extractDates(from: text)
+            if dates.count >= 2 {
+                hotel.checkIn = dates[0]
+                hotel.checkOut = dates[1]
+                confidenceBoost += 0.2
+            } else if let firstDate = dates.first {
+                hotel.checkIn = firstDate
+                confidenceBoost += 0.1
+            }
         }
         
         // Confirmation code
@@ -656,6 +677,10 @@ struct EmailParser {
             (#"\b\d{4}-\d{2}-\d{2}\b"#, "yyyy-MM-dd"),
             // "10/12/2025"
             (#"\b\d{2}/\d{2}/\d{4}\b"#, "MM/dd/yyyy"),
+            // "15 October 2025" (Booking.com PDFs)
+            (#"\b\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b"#, "d MMMM yyyy"),
+            // "October 15, 2025"
+            (#"\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b"#, "MMMM d yyyy"),
         ]
 
         // Collect matches from every format, then merge by position so the
@@ -712,9 +737,50 @@ struct EmailParser {
         return dates
     }
 
+    /// The property-name headline of a confirmation document: the first
+    /// early line that isn't boilerplate, a date, or contact details.
+    static func leadingPropertyName(in text: String) -> String? {
+        let stopwords = ["booking", "confirmation", "check-in", "check in",
+                         "check-out", "check out", "pin code", "thanks", "thank you",
+                         "your ", "dear ", "http", "www.", "@", "phone", "address",
+                         "gmt", "total", "price", "invoice", "guest", "night",
+                         "reservation", "cancellation", "important", "getting there"]
+        for rawLine in text.components(separatedBy: .newlines).prefix(12) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            guard line.count >= 4, line.count <= 60 else { continue }
+            guard line.rangeOfCharacter(from: .letters) != nil else { continue }
+            guard !line.hasSuffix(":") else { continue }
+            let lowered = line.lowercased()
+            guard !stopwords.contains(where: { lowered.contains($0) }) else { continue }
+            // Not a date line
+            guard extractDates(from: line).isEmpty else { continue }
+            return line
+        }
+        return nil
+    }
+
+    /// First date appearing shortly after a keyword ("check-in",
+    /// "check-out") — much more reliable than positional guessing in
+    /// PDFs, whose extracted text order can scramble
+    static func dateNear(keyword: String, in text: String) -> Date? {
+        guard let keywordRange = text.range(of: keyword, options: .caseInsensitive) else { return nil }
+        let windowEnd = text.index(keywordRange.upperBound, offsetBy: 120, limitedBy: text.endIndex) ?? text.endIndex
+        let window = String(text[keywordRange.upperBound..<windowEnd])
+        return extractDates(from: window).first
+    }
+
     /// Also used by ICSParser on event descriptions.
     static func extractConfirmationCode(from text: String) -> String? {
         // Common patterns: "Confirmation: ABC123", "Booking Ref: XYZ789", "PNR: ABCDE"
+        // Booking.com dotted numbers first: "Confirmation number: 3712.456.789"
+        if let match = firstMatch(
+            in: text,
+            pattern: #"(?:confirmation|reservation)\s*(?:number|no\.?|code)?\s*:?\s*(\d[\d.\-]{5,18}\d)"#,
+            options: .caseInsensitive
+        ), let codeRange = match.range(of: #"\d[\d.\-]{5,18}\d"#, options: .regularExpression) {
+            return String(match[codeRange])
+        }
+
         let patterns = [
             #"(?:confirmation|booking\s*(?:ref|reference|number|code)|pnr|record\s*locator|reservation)\s*(?:#|:|\s)\s*([A-Z0-9]{5,12})"#,
             #"(?:confirmation|booking)\s*(?:#|:)\s*(\d{6,12})"#,
