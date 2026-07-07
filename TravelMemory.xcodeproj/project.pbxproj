@@ -80,6 +80,13 @@
 			);
 			target = 57ABB1782FAF66120007FDE0 /* TravelWidget */;
 		};
+		57ABB1802FAF66120007FDE0 /* Exceptions for "TravelMemory" folder in "TravelMemory" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 57F6B0032FA14FF400039210 /* TravelMemory */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -106,6 +113,9 @@
 		};
 		57F6B0062FA14FF400039210 /* TravelMemory */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				57ABB1802FAF66120007FDE0 /* Exceptions for "TravelMemory" folder in "TravelMemory" target */,
+			);
 			path = TravelMemory;
 			sourceTree = "<group>";
 		};
@@ -694,8 +704,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Travel Steward reads your calendar to import booking events into your trip itinerary.";
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "Travel Steward reads your calendar to import booking events into your trip itinerary.";
+				INFOPLIST_FILE = TravelMemory/Info.plist;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Travel Steward uses Face ID to protect your sensitive travel documents in the Secure Vault.";
 				INFOPLIST_KEY_UIAppFonts = "PlusJakartaSans-Bold.ttf Inter-Regular.ttf Inter-Medium.ttf Inter-SemiBold.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -728,8 +737,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Travel Steward";
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Travel Steward reads your calendar to import booking events into your trip itinerary.";
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "Travel Steward reads your calendar to import booking events into your trip itinerary.";
+				INFOPLIST_FILE = TravelMemory/Info.plist;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Travel Steward uses Face ID to protect your sensitive travel documents in the Secure Vault.";
 				INFOPLIST_KEY_UIAppFonts = "PlusJakartaSans-Bold.ttf Inter-Regular.ttf Inter-Medium.ttf Inter-SemiBold.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

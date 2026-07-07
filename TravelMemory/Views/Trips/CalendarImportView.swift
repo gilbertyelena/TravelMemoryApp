@@ -186,7 +186,23 @@ struct CalendarImportView: View {
     // MARK: - EventKit
 
     private func loadEvents() async {
-        let granted = (try? await store.requestFullAccessToEvents()) ?? false
+        // Fast paths: an already-decided status never needs the prompt
+        switch EKEventStore.authorizationStatus(for: .event) {
+        case .denied, .restricted, .writeOnly:
+            accessDenied = true
+            return
+        default:
+            break
+        }
+
+        // Whatever goes wrong here (missing usage string, throttling),
+        // always resolve to a visible state — never a stuck spinner
+        var granted = false
+        do {
+            granted = try await store.requestFullAccessToEvents()
+        } catch {
+            granted = false
+        }
         guard granted else {
             accessDenied = true
             return
