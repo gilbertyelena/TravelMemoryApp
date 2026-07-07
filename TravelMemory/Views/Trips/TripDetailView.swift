@@ -1046,18 +1046,18 @@ struct AddItemSheet: View {
     var onDiningCreated: ((DiningReservation) -> Void)?
     @State private var showPasteImport = false
     @State private var showFilePicker = false
-    @State private var showCSVPicker = false
+    @State private var showCalendarImport = false
     @State private var icsParseResult: EmailParser.ParseResult?
     @State private var icsFileName = ""
     @State private var showICSResult = false
     @State private var icsImportError: String?
 
-    /// UTTypes accepted by the calendar file picker
-    private var calendarFileTypes: [UTType] {
-        var types: [UTType] = []
+    /// Types accepted by the shared import picker (.ics and CSV)
+    private var importFileTypes: [UTType] {
+        var types: [UTType] = [.commaSeparatedText, .plainText]
         if let ics = UTType(filenameExtension: "ics") { types.append(ics) }
         if let mime = UTType(mimeType: "text/calendar") { types.append(mime) }
-        return types.isEmpty ? [.data] : types
+        return types
     }
 
     var body: some View {
@@ -1078,12 +1078,12 @@ struct AddItemSheet: View {
                         showPasteImport = true
                     }
 
-                    addButton(icon: "calendar.badge.plus", title: "Import Calendar File", subtitle: "Exact import from an .ics \"Add to calendar\" file") {
-                        showFilePicker = true
+                    addButton(icon: "calendar.badge.checkmark", title: "Import from Calendar", subtitle: "Pick booking events straight from your calendar") {
+                        showCalendarImport = true
                     }
 
-                    addButton(icon: "tablecells", title: "Import Spreadsheet (CSV)", subtitle: "Migrate an itinerary you keep in Excel or Sheets") {
-                        showCSVPicker = true
+                    addButton(icon: "doc.badge.arrow.up", title: "Import a File (.ics / CSV)", subtitle: "A calendar attachment or a spreadsheet export") {
+                        showFilePicker = true
                     }
 
                     if let importError = icsImportError {
@@ -1181,22 +1181,23 @@ struct AddItemSheet: View {
             .sheet(isPresented: $showPasteImport) {
                 EmailInputView(targetTrip: trip, onCommitted: { dismiss() })
             }
-            .fileImporter(isPresented: $showFilePicker, allowedContentTypes: calendarFileTypes) { pickResult in
+            .fileImporter(isPresented: $showFilePicker, allowedContentTypes: importFileTypes) { pickResult in
                 icsImportError = nil
                 switch pickResult {
                 case .success(let url):
-                    importCalendarFile(at: url)
+                    importFile(at: url)
                 case .failure(let error):
                     icsImportError = error.localizedDescription
                 }
             }
-            .fileImporter(isPresented: $showCSVPicker, allowedContentTypes: [.commaSeparatedText, .plainText]) { pickResult in
-                icsImportError = nil
-                switch pickResult {
-                case .success(let url):
-                    importSpreadsheet(at: url)
-                case .failure(let error):
-                    icsImportError = error.localizedDescription
+            .sheet(isPresented: $showCalendarImport) {
+                CalendarImportView(trip: trip) { result in
+                    icsFileName = "Calendar"
+                    icsParseResult = result
+                    // The picker sheet is still dismissing — wait a beat
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showICSResult = true
+                    }
                 }
             }
             .sheet(isPresented: $showICSResult) {
@@ -1219,7 +1220,9 @@ struct AddItemSheet: View {
         .preferredColorScheme(.dark)
     }
 
-    private func importSpreadsheet(at url: URL) {
+    /// Reads a picked file and routes by content: calendar payloads go
+    /// to the ICS parser, everything else is treated as a spreadsheet.
+    private func importFile(at url: URL) {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
 
@@ -1229,35 +1232,7 @@ struct AddItemSheet: View {
         }
 
         icsFileName = url.lastPathComponent
-        var parsed = CSVImporter.parse(text)
-        let duplicates = EmailIngestionService.duplicateDescriptions(in: parsed, against: trip)
-        if !duplicates.isEmpty {
-            parsed.issues.append("Already in this trip (will be skipped): \(duplicates.joined(separator: ", "))")
-        }
-        icsParseResult = parsed
-        showICSResult = true
-    }
-
-    private func importCalendarFile(at url: URL) {
-        let accessing = url.startAccessingSecurityScopedResource()
-        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-
-        guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-            icsImportError = "Could not read \(url.lastPathComponent)"
-            return
-        }
-        guard ICSParser.isCalendar(text) else {
-            icsImportError = "\(url.lastPathComponent) is not a calendar file"
-            return
-        }
-
-        icsFileName = url.lastPathComponent
-        var parsed = ICSParser.parse(text)
-        let duplicates = EmailIngestionService.duplicateDescriptions(in: parsed, against: trip)
-        if !duplicates.isEmpty {
-            parsed.issues.append("Already in this trip (will be skipped): \(duplicates.joined(separator: ", "))")
-        }
-        icsParseResult = parsed
+        icsParseResult = ICSParser.isCalendar(text) ? ICSParser.parse(text) : CSVImporter.parse(text)
         showICSResult = true
     }
 

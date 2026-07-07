@@ -34,14 +34,22 @@ struct ICSParser {
     /// Converts a calendar file into the same result type the email
     /// parser produces, so the review/commit pipeline is shared.
     static func parse(_ text: String) -> EmailParser.ParseResult {
-        var result = EmailParser.ParseResult()
         let events = parseEvents(from: text)
 
         guard !events.isEmpty else {
+            var result = EmailParser.ParseResult()
             result.issues.append("No events found in the calendar file")
             result.overallConfidence = 0.1
             return result
         }
+
+        return parseResult(from: events)
+    }
+
+    /// Converts calendar events into the shared review/commit format.
+    /// Also used by the EventKit importer (events from the Calendar app).
+    static func parseResult(from events: [Event]) -> EmailParser.ParseResult {
+        var result = EmailParser.ParseResult()
 
         for event in events {
             classify(event, into: &result)
