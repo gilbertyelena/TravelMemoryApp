@@ -356,6 +356,41 @@ struct ICSParserTests {
         #expect(dining.reservationTime == expectedTime)
     }
 
+    @Test func bookingHotelCalendarEventIsNotAFlight() throws {
+        // Regression: Booking.com hotel calendar events keep the whole
+        // reservation in the notes — postcode tokens ("W6 9XX") faked
+        // flight numbers and produced empty 90%-confidence flights
+        let event = ICSParser.Event(
+            summary: "Bergblick Garni",
+            location: "Bergstrasse 12, Garmisch",
+            details: "Check-in: 15 October 2025 (from 15:00)\nCheck-out: 18 October 2025\nConfirmation: 3712.456.789\nOffice: W6 9XX London",
+            start: Date(timeIntervalSince1970: 1_760_000_000),
+            end: Date(timeIntervalSince1970: 1_760_250_000),
+            isAllDay: true
+        )
+        let result = ICSParser.parseResult(from: [event])
+
+        #expect(result.flights.isEmpty)
+        #expect(result.hotels.count == 1)
+        let hotel = try #require(result.hotels.first)
+        #expect(hotel.hotelName == "Bergblick Garni")
+        #expect(hotel.confirmationCode == "3712.456.789")
+    }
+
+    @Test func flightTitledCalendarEventStillClassifiesAsFlight() {
+        let event = ICSParser.Event(
+            summary: "Flight to Munich FR1885",
+            location: "London Stansted",
+            details: "",
+            start: Date(timeIntervalSince1970: 1_760_000_000),
+            end: Date(timeIntervalSince1970: 1_760_010_000),
+            isAllDay: false
+        )
+        let result = ICSParser.parseResult(from: [event])
+        #expect(result.flights.count == 1)
+        #expect(result.flights.first?.flightNumber == "FR1885")
+    }
+
     @Test func foldedLinesAndUTCTimesAreHandled() throws {
         // SUMMARY folded across two lines (RFC 5545), DTSTART in UTC
         let fixture = "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART:20251014T100000Z\r\nSUMMARY:Guided tour of the old\r\n  town and market\r\nEND:VEVENT\r\nEND:VCALENDAR"

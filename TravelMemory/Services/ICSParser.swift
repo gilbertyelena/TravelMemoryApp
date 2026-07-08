@@ -86,10 +86,21 @@ struct ICSParser {
     private static func classify(_ event: Event, into result: inout EmailParser.ParseResult) {
         let haystack = "\(event.summary)\n\(event.location)\n\(event.details)"
         let lowered = event.summary.lowercased()
+        let notesLower = event.details.lowercased()
 
-        let hasFlightNumber = !EmailParser.parseFlights(from: haystack)
+        // Lodging signal first: Booking.com calendar events carry the
+        // whole reservation in the notes — check-in AND check-out there
+        // is unambiguous, and must win over any flight-ish tokens
+        let notesSayLodging = (notesLower.contains("check-in") || notesLower.contains("check in"))
+            && (notesLower.contains("check-out") || notesLower.contains("check out"))
+
+        // Flight is judged on the TITLE only: notes and addresses are
+        // full of postcode-style tokens ("W6 9XX") that fake flight
+        // numbers and previously produced empty 90% "flights"
+        let titleFlightNumber = !EmailParser.parseFlights(from: event.summary)
             .filter { !$0.flightNumber.isEmpty }.isEmpty
-        if lowered.contains("flight") || event.summary.contains("✈") || hasFlightNumber {
+        if !notesSayLodging,
+           lowered.contains("flight") || event.summary.contains("✈") || titleFlightNumber {
             // Let the text heuristics pull airports/codes out of the
             // summary, but the event's own timestamps are authoritative.
             var flight = EmailParser.parseFlights(from: haystack).first
@@ -111,7 +122,7 @@ struct ICSParser {
 
         let hotelKeywords = ["hotel", "check-in", "check in", "apartment", "hostel",
                              "resort", "accommodation", "stay at", "b&b", "guesthouse", "inn "]
-        if hotelKeywords.contains(where: { lowered.contains($0) }) {
+        if notesSayLodging || hotelKeywords.contains(where: { lowered.contains($0) }) {
             var hotel = EmailParser.HotelParseData(
                 hotelName: cleanedTitle(event.summary),
                 address: event.location,

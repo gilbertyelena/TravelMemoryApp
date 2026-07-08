@@ -13,7 +13,7 @@ import EventKit
 
 struct CalendarImportView: View {
     let trip: Trip
-    var onImport: (EmailParser.ParseResult) -> Void
+    var onImport: (EmailParser.ParseResult, String) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var events: [EKEvent] = []
@@ -249,7 +249,12 @@ struct CalendarImportView: View {
             )
         }
         let result = ICSParser.parseResult(from: mapped)
+        // Raw event text rides along so misclassifications can be
+        // reported with their exact input (COPY IMPORTED TEXT)
+        let sourceText = mapped.map {
+            "TITLE: \($0.summary)\nLOCATION: \($0.location)\nNOTES: \($0.details)"
+        }.joined(separator: "\n---\n")
         dismiss()
-        onImport(result)
+        onImport(result, sourceText)
     }
 }

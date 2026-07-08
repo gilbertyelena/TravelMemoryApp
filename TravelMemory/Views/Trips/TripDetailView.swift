@@ -1049,6 +1049,7 @@ struct AddItemSheet: View {
     @State private var showCalendarImport = false
     @State private var icsParseResult: EmailParser.ParseResult?
     @State private var icsFileName = ""
+    @State private var icsSourceText: String?
     /// Item-based presentation: the review sheet only ever exists WITH
     /// its result — an isPresented + if-let pair can race to an empty
     /// (all-black) sheet
@@ -1058,6 +1059,7 @@ struct AddItemSheet: View {
         let id = UUID()
         let result: EmailParser.ParseResult
         let sourceName: String
+        var sourceText: String? = nil
     }
     @State private var icsImportError: String?
 
@@ -1203,18 +1205,20 @@ struct AddItemSheet: View {
                 // Presenting from onDismiss is sequencing-safe: it fires
                 // only after the picker sheet has fully closed
                 if let result = icsParseResult {
-                    importReview = ImportReviewItem(result: result, sourceName: icsFileName)
+                    importReview = ImportReviewItem(result: result, sourceName: icsFileName, sourceText: icsSourceText)
                     icsParseResult = nil
                 }
             }) {
-                CalendarImportView(trip: trip) { result in
+                CalendarImportView(trip: trip) { result, sourceText in
                     icsFileName = "Calendar"
                     icsParseResult = result
+                    icsSourceText = sourceText
                 }
             }
             .sheet(item: $importReview) { review in
                 ParseResultView(
                     result: review.result,
+                    sourceText: review.sourceText,
                     onAccept: {
                         let service = EmailIngestionService(modelContext: modelContext)
                         service.commit(review.result, subject: review.sourceName, body: "", sender: "", into: trip)
