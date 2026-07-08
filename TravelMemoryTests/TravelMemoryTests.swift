@@ -580,7 +580,9 @@ struct BackupServiceTests {
             ParsedEmail.self, PackingCategoryModel.self, PackingItemModel.self,
             VaultDocument.self, DiningReservation.self, TripActivity.self,
         ])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        // .none explicitly: the entitled test host would otherwise try
+        // CloudKit (.automatic default), which in-memory stores can't do
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         return try ModelContainer(for: schema, configurations: [config])
     }
 

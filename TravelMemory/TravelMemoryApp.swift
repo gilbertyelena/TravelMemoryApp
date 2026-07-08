@@ -17,7 +17,7 @@ import SwiftData
 ///      Remote notifications).
 ///   2. Flip `isEnabled` to true.
 enum CloudSyncConfig {
-    static let isEnabled = false
+    static let isEnabled = true
     static let containerID = "iCloud.com.alenka.TravelSteward"
 }
 
@@ -36,12 +36,25 @@ struct TravelMemoryApp: App {
             DiningReservation.self,
             TripActivity.self,
         ])
+        // Try CloudKit first when enabled; any failure (missing
+        // entitlement, no iCloud account, simulator quirks) falls back
+        // to the plain local store — never to the backup-and-reset path
+        if CloudSyncConfig.isEnabled {
+            let cloudConfiguration = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .private(CloudSyncConfig.containerID)
+            )
+            if let container = try? ModelContainer(for: schema, configurations: [cloudConfiguration]) {
+                return container
+            }
+            print("⚠️ CloudKit container unavailable — continuing with the local store")
+        }
+
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
-            cloudKitDatabase: CloudSyncConfig.isEnabled
-                ? .private(CloudSyncConfig.containerID)
-                : .none
+            cloudKitDatabase: .none
         )
 
         do {
