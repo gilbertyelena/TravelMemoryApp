@@ -1049,7 +1049,16 @@ struct AddItemSheet: View {
     @State private var showCalendarImport = false
     @State private var icsParseResult: EmailParser.ParseResult?
     @State private var icsFileName = ""
-    @State private var showICSResult = false
+    /// Item-based presentation: the review sheet only ever exists WITH
+    /// its result — an isPresented + if-let pair can race to an empty
+    /// (all-black) sheet
+    @State private var importReview: ImportReviewItem?
+
+    struct ImportReviewItem: Identifiable {
+        let id = UUID()
+        let result: EmailParser.ParseResult
+        let sourceName: String
+    }
     @State private var icsImportError: String?
 
     /// Types accepted by the shared import picker (.ics, CSV, PDF)
@@ -1190,31 +1199,32 @@ struct AddItemSheet: View {
                     icsImportError = error.localizedDescription
                 }
             }
-            .sheet(isPresented: $showCalendarImport) {
+            .sheet(isPresented: $showCalendarImport, onDismiss: {
+                // Presenting from onDismiss is sequencing-safe: it fires
+                // only after the picker sheet has fully closed
+                if let result = icsParseResult {
+                    importReview = ImportReviewItem(result: result, sourceName: icsFileName)
+                    icsParseResult = nil
+                }
+            }) {
                 CalendarImportView(trip: trip) { result in
                     icsFileName = "Calendar"
                     icsParseResult = result
-                    // The picker sheet is still dismissing — wait a beat
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showICSResult = true
-                    }
                 }
             }
-            .sheet(isPresented: $showICSResult) {
-                if let result = icsParseResult {
-                    ParseResultView(
-                        result: result,
-                        onAccept: {
-                            let service = EmailIngestionService(modelContext: modelContext)
-                            service.commit(result, subject: icsFileName, body: "", sender: "", into: trip)
-                            showICSResult = false
-                            dismiss()
-                        },
-                        onDiscard: {
-                            showICSResult = false
-                        }
-                    )
-                }
+            .sheet(item: $importReview) { review in
+                ParseResultView(
+                    result: review.result,
+                    onAccept: {
+                        let service = EmailIngestionService(modelContext: modelContext)
+                        service.commit(review.result, subject: review.sourceName, body: "", sender: "", into: trip)
+                        importReview = nil
+                        dismiss()
+                    },
+                    onDiscard: {
+                        importReview = nil
+                    }
+                )
             }
         }
         .preferredColorScheme(.dark)
@@ -1234,8 +1244,10 @@ struct AddItemSheet: View {
                 icsImportError = "Couldn't read text from \(url.lastPathComponent) — it may be a scanned image."
                 return
             }
-            icsParseResult = EmailIngestionService.parse(subject: url.lastPathComponent, body: text, sender: "")
-            showICSResult = true
+            importReview = ImportReviewItem(
+                result: EmailIngestionService.parse(subject: url.lastPathComponent, body: text, sender: ""),
+                sourceName: url.lastPathComponent
+            )
             return
         }
 
@@ -1244,8 +1256,10 @@ struct AddItemSheet: View {
             return
         }
 
-        icsParseResult = ICSParser.isCalendar(text) ? ICSParser.parse(text) : CSVImporter.parse(text)
-        showICSResult = true
+        importReview = ImportReviewItem(
+            result: ICSParser.isCalendar(text) ? ICSParser.parse(text) : CSVImporter.parse(text),
+            sourceName: url.lastPathComponent
+        )
     }
 
     private func addButton(icon: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {

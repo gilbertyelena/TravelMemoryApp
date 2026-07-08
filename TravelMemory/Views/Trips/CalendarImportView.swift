@@ -19,6 +19,7 @@ struct CalendarImportView: View {
     @State private var events: [EKEvent] = []
     @State private var selectedIDs: Set<String> = []
     @State private var accessDenied = false
+    @State private var deniedReason = "Allow calendar access in Settings → Travel Steward to import booking events."
     @State private var loaded = false
 
     private let store = EKEventStore()
@@ -70,7 +71,7 @@ struct CalendarImportView: View {
             Text("Calendar access needed")
                 .font(VoyagerFont.headlineMedium)
                 .foregroundStyle(Color.voyagerOnSurface)
-            Text("Allow calendar access in Settings → Travel Steward to import booking events.")
+            Text(deniedReason)
                 .font(VoyagerFont.bodySmall)
                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                 .multilineTextAlignment(.center)
@@ -186,6 +187,14 @@ struct CalendarImportView: View {
     // MARK: - EventKit
 
     private func loadEvents() async {
+        // A build without the iOS 17 usage key makes the permission
+        // request hang forever — detect it and say so on screen
+        guard Bundle.main.object(forInfoDictionaryKey: "NSCalendarsFullAccessUsageDescription") != nil else {
+            deniedReason = "This build is missing the calendar permission key. In Xcode: close and reopen the project, then Run again."
+            accessDenied = true
+            return
+        }
+
         // Fast paths: an already-decided status never needs the prompt
         switch EKEventStore.authorizationStatus(for: .event) {
         case .denied, .restricted, .writeOnly:
@@ -195,14 +204,17 @@ struct CalendarImportView: View {
             break
         }
 
-        // Whatever goes wrong here (missing usage string, throttling),
-        // always resolve to a visible state — never a stuck spinner
-        var granted = false
-        do {
-            granted = try await store.requestFullAccessToEvents()
-        } catch {
-            granted = false
+        // Completion-handler API wrapped in a continuation: immune to
+        // Swift-concurrency cancellation (a sleep-based timeout here gets
+        // cancelled by SwiftUI and misfires instantly)
+        let granted: Bool = await withCheckedContinuation { continuation in
+            store.requestFullAccessToEvents { granted, _ in
+                DispatchQueue.main.async {
+                    continuation.resume(returning: granted)
+                }
+            }
         }
+
         guard granted else {
             accessDenied = true
             return
