@@ -90,6 +90,11 @@ struct TravelMemoryApp: App {
         }
     }()
 
+    init() {
+        // Check-in reminders open the airline's check-in page on tap
+        NotificationRouter.activate()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

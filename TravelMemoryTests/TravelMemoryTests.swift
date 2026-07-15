@@ -606,6 +606,28 @@ struct DuplicateImportTests {
     }
 }
 
+struct AirlineCheckInTests {
+
+    @Test func resolvesCheckInURLFromFlightNumberDesignator() throws {
+        let url = try #require(AirlineCheckIn.url(flightNumber: "FR1885", airline: ""))
+        #expect(url.absoluteString.contains("ryanair.com"))
+
+        // Alphanumeric designators like Wizz Air's W6 work too
+        let wizz = try #require(AirlineCheckIn.url(flightNumber: "W6 2301", airline: ""))
+        #expect(wizz.absoluteString.contains("wizzair.com"))
+    }
+
+    @Test func fallsBackToAirlineNameWhenNumberIsMissing() throws {
+        let url = try #require(AirlineCheckIn.url(flightNumber: "", airline: "British Airways"))
+        #expect(url.absoluteString.contains("britishairways.com"))
+    }
+
+    @Test func unknownAirlineYieldsNoURL() {
+        #expect(AirlineCheckIn.url(flightNumber: "ZZ999", airline: "Air Nowhere") == nil)
+        #expect(AirlineCheckIn.url(flightNumber: "1885", airline: "") == nil)
+    }
+}
+
 @MainActor
 struct BackupServiceTests {
 

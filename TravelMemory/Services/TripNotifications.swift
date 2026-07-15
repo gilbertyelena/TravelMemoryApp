@@ -47,11 +47,17 @@ struct TripNotifications {
             let name = what.isEmpty ? "your flight" : what
             let destination = flight.arrivalCity.isEmpty ? flight.arrivalAirport : flight.arrivalCity
 
+            // Online check-in usually opens 24h out; tapping the
+            // reminder jumps straight to the airline's check-in page
+            let checkInURL = AirlineCheckIn.url(flightNumber: flight.flightNumber, airline: flight.airline)
+            var checkinBody = destination.isEmpty ? "Departure coming up." : "To \(destination) — departure coming up."
+            if checkInURL != nil { checkinBody += " Tap to open online check-in." }
             schedule(
                 id: "\(itemID)-checkin",
                 title: "Check in for \(name)",
-                body: destination.isEmpty ? "Departure coming up." : "To \(destination) — departure coming up.",
-                at: flight.departureTime.addingTimeInterval(-checkinLead)
+                body: checkinBody,
+                at: flight.departureTime.addingTimeInterval(-checkinLead),
+                userInfo: checkInURL.map { ["checkInURL": $0.absoluteString] } ?? [:]
             )
             schedule(
                 id: "\(itemID)-leave",
@@ -108,7 +114,8 @@ struct TripNotifications {
 
     // MARK: - Internals
 
-    private static func schedule(id: String, title: String, body: String, at date: Date) {
+    private static func schedule(id: String, title: String, body: String, at date: Date,
+                                 userInfo: [AnyHashable: Any] = [:]) {
         guard date > Date() else { return }
 
         requestPermissionIfNeeded()
@@ -117,6 +124,7 @@ struct TripNotifications {
         content.title = title
         content.body = body
         content.sound = .default
+        content.userInfo = userInfo
 
         let components = Calendar.current.dateComponents(
             [.year, .month, .day, .hour, .minute], from: date
