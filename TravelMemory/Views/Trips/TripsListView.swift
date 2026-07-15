@@ -18,13 +18,19 @@ struct TripsListView: View {
     @State private var selectedTrip: Trip?
     @State private var viewingPassFor: FlightSegment?
     @State private var appeared = false
+    @State private var showPastTrips = false
+
+    private var activeTrips: [Trip] { trips.filter { !$0.isArchived } }
+    private var archivedTrips: [Trip] {
+        trips.filter(\.isArchived).sorted { $0.endDate > $1.endDate }
+    }
     
     /// The next upcoming event across all trips
     private var nextUpEvent: NextUpInfo? {
         let now = Date()
         var candidates: [NextUpInfo] = []
         
-        for trip in trips where trip.status != .completed {
+        for trip in trips where trip.status != .completed && !trip.isArchived {
             // Check trip start
             if trip.startDate > now {
                 candidates.append(NextUpInfo(
@@ -118,7 +124,7 @@ struct TripsListView: View {
                             Text("Your Trips")
                                 .font(VoyagerFont.headlineLarge)
                                 .foregroundStyle(Color.voyagerOnBackground)
-                            Text("\(trips.count) trip\(trips.count == 1 ? "" : "s")")
+                            Text("\(activeTrips.count) trip\(activeTrips.count == 1 ? "" : "s")")
                                 .font(VoyagerFont.bodySmall)
                                 .foregroundStyle(Color.voyagerOnSurfaceVariant)
                         }
@@ -181,24 +187,39 @@ struct TripsListView: View {
                         .staggeredAppear(index: 1, appeared: appeared)
                         
                         // Trip cards
-                        if trips.isEmpty {
+                        if activeTrips.isEmpty && archivedTrips.isEmpty {
                             emptyState
                                 .padding(.top, 40)
                                 .staggeredAppear(index: 2, appeared: appeared)
                         } else {
                             VStack(spacing: VoyagerSpacing.stackMedium) {
-                                ForEach(Array(trips.enumerated()), id: \.element.id) { index, trip in
+                                ForEach(Array(activeTrips.enumerated()), id: \.element.id) { index, trip in
                                     Button {
                                         selectedTrip = trip
                                     } label: {
                                         tripCard(trip)
                                     }
                                     .buttonStyle(.plain)
+                                    .contextMenu {
+                                        if trip.status == .completed || trip.endDate < Date() {
+                                            Button {
+                                                archive(trip)
+                                            } label: {
+                                                Label("Archive Trip", systemImage: "archivebox")
+                                            }
+                                        }
+                                    }
                                     .staggeredAppear(index: index + 2, appeared: appeared)
                                 }
                             }
                             .padding(.horizontal, VoyagerSpacing.marginMain)
                             .padding(.top, VoyagerSpacing.stackLarge)
+
+                            if !archivedTrips.isEmpty {
+                                pastTripsSection
+                                    .padding(.horizontal, VoyagerSpacing.marginMain)
+                                    .padding(.top, VoyagerSpacing.stackLarge)
+                            }
                         }
                     }
                     .padding(.bottom, 120)
@@ -225,6 +246,66 @@ struct TripsListView: View {
         }
     }
     
+    // MARK: - Past Trips
+
+    private var pastTripsSection: some View {
+        VStack(alignment: .leading, spacing: VoyagerSpacing.stackMedium) {
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) { showPastTrips.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "archivebox")
+                        .font(.system(size: 13))
+                    Text("PAST TRIPS")
+                        .font(VoyagerFont.labelCaps)
+                        .tracking(1.2)
+                    Text("\(archivedTrips.count)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Color.voyagerSurfaceContainerHigh)
+                        .clipShape(Capsule())
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .rotationEffect(.degrees(showPastTrips ? 180 : 0))
+                }
+                .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if showPastTrips {
+                ForEach(archivedTrips) { trip in
+                    Button {
+                        selectedTrip = trip
+                    } label: {
+                        tripCard(trip)
+                            .opacity(0.8)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            unarchive(trip)
+                        } label: {
+                            Label("Move Back to Trips", systemImage: "tray.and.arrow.up")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func archive(_ trip: Trip) {
+        withAnimation { trip.isArchived = true }
+        modelContext.saveOrLog()
+    }
+
+    private func unarchive(_ trip: Trip) {
+        withAnimation { trip.isArchived = false }
+        modelContext.saveOrLog()
+    }
+
     // MARK: - Next Up Banner
     
     private func nextUpBanner(_ info: NextUpInfo) -> some View {

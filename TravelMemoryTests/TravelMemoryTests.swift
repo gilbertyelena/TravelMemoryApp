@@ -702,6 +702,7 @@ struct BackupServiceTests {
                         startDate: Date(timeIntervalSince1970: 1_760_000_000),
                         endDate: Date(timeIntervalSince1970: 1_760_500_000))
         trip.timeZoneID = "Europe/Berlin"
+        trip.isArchived = true
         context.insert(trip)
 
         let flight = FlightSegment(airline: "Ryanair", flightNumber: "FR1885",
@@ -746,6 +747,7 @@ struct BackupServiceTests {
         let restored = try #require(trips.first)
         #expect(restored.id == trip.id)
         #expect(restored.timeZoneID == "Europe/Berlin")
+        #expect(restored.isArchived == true)
 
         let flight = try #require(restored.flights.first)
         #expect(flight.flightNumber == "FR1885")

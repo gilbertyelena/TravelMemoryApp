@@ -26,6 +26,8 @@ final class Trip: Hashable {
     /// IANA zone of the destination (geocoded); itinerary times display
     /// in this zone so the schedule matches local clocks when abroad
     var timeZoneID: String = ""
+    /// Archived trips leave the active list for the Past Trips shelf
+    var isArchived: Bool = false
     
     // CloudKit demands every relationship be optional — the stored
     // arrays are, with originalName preserving existing on-disk data.

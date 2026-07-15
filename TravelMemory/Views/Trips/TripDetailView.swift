@@ -122,6 +122,31 @@ struct TripDetailView: View {
                         .padding(.horizontal, VoyagerSpacing.marginMain)
                         .staggeredAppear(index: groupedByDay.count + 2, appeared: appeared)
                     
+                    // Archive — completed/past trips move to the
+                    // Past Trips shelf on the trips screen
+                    if trip.isArchived || trip.status == .completed || trip.endDate < Date() {
+                        Button {
+                            let archiving = !trip.isArchived
+                            trip.isArchived = archiving
+                            modelContext.saveOrLog()
+                            if archiving { dismiss() }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: trip.isArchived ? "tray.and.arrow.up" : "archivebox")
+                                Text(trip.isArchived ? "MOVE BACK TO TRIPS" : "ARCHIVE TRIP")
+                            }
+                            .font(VoyagerFont.labelCaps)
+                            .tracking(0.6)
+                            .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.voyagerSurfaceContainerLow)
+                            .clipShape(RoundedRectangle(cornerRadius: VoyagerRadius.medium))
+                        }
+                        .padding(.horizontal, VoyagerSpacing.marginMain)
+                        .padding(.top, 8)
+                    }
+
                     // Delete trip
                     Button(role: .destructive) {
                         showDeleteConfirm = true

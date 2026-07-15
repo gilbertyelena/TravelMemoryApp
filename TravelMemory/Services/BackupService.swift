@@ -31,6 +31,8 @@ struct BackupArchive: Codable {
         var statusRaw: String
         var createdAt: Date
         var timeZoneID: String
+        // Optional: backups from before archiving existed lack the key
+        var isArchived: Bool? = nil
         var flights: [FlightBackup] = []
         var hotels: [HotelBackup] = []
         var carRentals: [CarBackup] = []
@@ -328,7 +330,7 @@ struct BackupService {
             id: trip.id, name: trip.name, destination: trip.destination,
             startDate: trip.startDate, endDate: trip.endDate,
             statusRaw: trip.statusRaw, createdAt: trip.createdAt,
-            timeZoneID: trip.timeZoneID
+            timeZoneID: trip.timeZoneID, isArchived: trip.isArchived
         )
         backup.flights = trip.flights.map { f in
             BackupArchive.FlightBackup(
@@ -418,6 +420,7 @@ struct BackupService {
         trip.id = backup.id
         trip.createdAt = backup.createdAt
         trip.timeZoneID = backup.timeZoneID
+        trip.isArchived = backup.isArchived ?? false
 
         for f in backup.flights {
             let flight = FlightSegment(
