@@ -168,8 +168,7 @@ struct TripDetailView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text(trip.name)
-                    .font(VoyagerFont.bodySmall)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodySmallSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -722,8 +721,7 @@ struct TripDetailView: View {
                 }
                 
                 Text(hotel.hotelName)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
                 HStack(spacing: 4) {
@@ -784,8 +782,7 @@ struct TripDetailView: View {
                 }
                 
                 Text(car.company)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
                 if !car.vehicleType.isEmpty {
@@ -836,8 +833,7 @@ struct TripDetailView: View {
                 }
                 
                 Text(dining.restaurantName.isEmpty ? "Restaurant" : dining.restaurantName)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
                 HStack(spacing: 12) {
@@ -908,8 +904,7 @@ struct TripDetailView: View {
                 }
                 
                 Text(activity.activityName.isEmpty ? "Activity" : activity.activityName)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 
                 HStack(spacing: 12) {
@@ -998,8 +993,7 @@ struct TripDetailView: View {
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Packing List")
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodyLargeSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     
                     if totalItems > 0 {
@@ -1286,8 +1280,7 @@ struct AddItemSheet: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodyLargeSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(subtitle)
                         .font(VoyagerFont.bodySmall)

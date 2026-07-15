@@ -96,8 +96,7 @@ struct TripShareReceiveView: View {
 
         return VStack(alignment: .leading, spacing: 4) {
             Text(trip.name.isEmpty ? trip.destination : trip.name)
-                .font(VoyagerFont.bodyLarge)
-                .fontWeight(.semibold)
+                .font(VoyagerFont.bodyLargeSemibold)
                 .foregroundStyle(Color.voyagerOnSurface)
             Text(dateRange(trip))
                 .font(VoyagerFont.bodySmall)

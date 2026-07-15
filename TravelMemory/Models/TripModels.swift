@@ -27,13 +27,45 @@ final class Trip: Hashable {
     /// in this zone so the schedule matches local clocks when abroad
     var timeZoneID: String = ""
     
-    @Relationship(deleteRule: .cascade) var flights: [FlightSegment] = []
-    @Relationship(deleteRule: .cascade) var hotels: [HotelBooking] = []
-    @Relationship(deleteRule: .cascade) var carRentals: [CarRentalBooking] = []
-    @Relationship(deleteRule: .cascade) var dining: [DiningReservation] = []
-    @Relationship(deleteRule: .cascade) var activities: [TripActivity] = []
-    @Relationship(deleteRule: .cascade) var parsedEmails: [ParsedEmail] = []
-    @Relationship(deleteRule: .cascade) var packingCategories: [PackingCategoryModel] = []
+    // CloudKit demands every relationship be optional — the stored
+    // arrays are, with originalName preserving existing on-disk data.
+    // The app only ever touches the non-optional accessors below.
+    @Relationship(deleteRule: .cascade, originalName: "flights") private var flightsStorage: [FlightSegment]? = []
+    @Relationship(deleteRule: .cascade, originalName: "hotels") private var hotelsStorage: [HotelBooking]? = []
+    @Relationship(deleteRule: .cascade, originalName: "carRentals") private var carRentalsStorage: [CarRentalBooking]? = []
+    @Relationship(deleteRule: .cascade, originalName: "dining") private var diningStorage: [DiningReservation]? = []
+    @Relationship(deleteRule: .cascade, originalName: "activities") private var activitiesStorage: [TripActivity]? = []
+    @Relationship(deleteRule: .cascade, originalName: "parsedEmails") private var parsedEmailsStorage: [ParsedEmail]? = []
+    @Relationship(deleteRule: .cascade, originalName: "packingCategories") private var packingCategoriesStorage: [PackingCategoryModel]? = []
+
+    var flights: [FlightSegment] {
+        get { flightsStorage ?? [] }
+        set { flightsStorage = newValue }
+    }
+    var hotels: [HotelBooking] {
+        get { hotelsStorage ?? [] }
+        set { hotelsStorage = newValue }
+    }
+    var carRentals: [CarRentalBooking] {
+        get { carRentalsStorage ?? [] }
+        set { carRentalsStorage = newValue }
+    }
+    var dining: [DiningReservation] {
+        get { diningStorage ?? [] }
+        set { diningStorage = newValue }
+    }
+    var activities: [TripActivity] {
+        get { activitiesStorage ?? [] }
+        set { activitiesStorage = newValue }
+    }
+    var parsedEmails: [ParsedEmail] {
+        get { parsedEmailsStorage ?? [] }
+        set { parsedEmailsStorage = newValue }
+    }
+    var packingCategories: [PackingCategoryModel] {
+        get { packingCategoriesStorage ?? [] }
+        set { packingCategoriesStorage = newValue }
+    }
     
     init(
         name: String = "",

@@ -420,8 +420,7 @@ struct SpatialMemoryBridgeView: View {
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(pin.name)
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodyLargeSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(pin.dateRange)
                         .font(VoyagerFont.bodySmall)
@@ -509,8 +508,7 @@ struct SpatialMemoryBridgeView: View {
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(trip.destination)
-                            .font(VoyagerFont.bodyLarge)
-                            .fontWeight(.medium)
+                            .font(VoyagerFont.bodyLargeMedium)
                             .foregroundStyle(Color.voyagerOnSurface)
                         Text(trip.dateRangeText)
                             .font(VoyagerFont.bodySmall)
@@ -596,8 +594,7 @@ struct SpatialMemoryBridgeView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(place.name)
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodyLargeSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .lineLimit(2)
                     if !place.address.isEmpty {
@@ -754,8 +751,7 @@ struct SpatialMemoryBridgeView: View {
                             
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(place.name)
-                                    .font(VoyagerFont.bodySmall)
-                                    .fontWeight(.medium)
+                                    .font(VoyagerFont.bodySmallMedium)
                                     .foregroundStyle(Color.voyagerOnSurface)
                                     .lineLimit(1)
                                 if !place.address.isEmpty {

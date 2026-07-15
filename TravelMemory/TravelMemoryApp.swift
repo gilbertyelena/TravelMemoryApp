@@ -45,10 +45,11 @@ struct TravelMemoryApp: App {
                 isStoredInMemoryOnly: false,
                 cloudKitDatabase: .private(CloudSyncConfig.containerID)
             )
-            if let container = try? ModelContainer(for: schema, configurations: [cloudConfiguration]) {
-                return container
+            do {
+                return try ModelContainer(for: schema, configurations: [cloudConfiguration])
+            } catch {
+                print("⚠️ CloudKit container unavailable — continuing with the local store. Reason: \(error)")
             }
-            print("⚠️ CloudKit container unavailable — continuing with the local store")
         }
 
         let modelConfiguration = ModelConfiguration(

@@ -189,8 +189,7 @@ struct VaultContentView: View {
             // Info
             VStack(alignment: .leading, spacing: 3) {
                 Text(doc.title.isEmpty ? doc.category.label : doc.title)
-                    .font(VoyagerFont.bodySmall)
-                    .fontWeight(.medium)
+                    .font(VoyagerFont.bodySmallMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
                     .lineLimit(1)
                 

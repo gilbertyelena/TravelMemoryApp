@@ -166,8 +166,7 @@ struct EditTripView: View {
                             .tracking(0.8)
                             .foregroundStyle(datePhase == .start && showCalendar ? Color.voyagerPrimaryAccent : Color.voyagerOnSurfaceVariant)
                         Text(displayFmt.string(from: startDate))
-                            .font(VoyagerFont.bodySmall)
-                            .fontWeight(.medium)
+                            .font(VoyagerFont.bodySmallMedium)
                             .foregroundStyle(Color.voyagerOnSurface)
                     }
                     .frame(maxWidth: .infinity)
@@ -207,8 +206,7 @@ struct EditTripView: View {
                             .tracking(0.8)
                             .foregroundStyle(datePhase == .end && showCalendar ? Color.voyagerPrimaryAccent : Color.voyagerOnSurfaceVariant)
                         Text(displayFmt.string(from: endDate))
-                            .font(VoyagerFont.bodySmall)
-                            .fontWeight(.medium)
+                            .font(VoyagerFont.bodySmallMedium)
                             .foregroundStyle(Color.voyagerOnSurface)
                     }
                     .frame(maxWidth: .infinity)
@@ -340,8 +338,7 @@ struct EditTripView: View {
                                 
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(suggestion.title)
-                                        .font(VoyagerFont.bodySmall)
-                                        .fontWeight(.medium)
+                                        .font(VoyagerFont.bodySmallMedium)
                                         .foregroundStyle(Color.voyagerOnSurface)
                                     
                                     if !suggestion.subtitle.isEmpty {

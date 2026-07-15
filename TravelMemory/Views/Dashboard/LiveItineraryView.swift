@@ -239,8 +239,7 @@ struct LiveItineraryView: View {
                             .foregroundStyle(Color.voyagerPrimary)
                     )
                 Text(label)
-                    .font(VoyagerFont.bodySmall)
-                    .fontWeight(.medium)
+                    .font(VoyagerFont.bodySmallMedium)
                     .foregroundStyle(Color.voyagerOnSurface)
             }
             .frame(maxWidth: .infinity)

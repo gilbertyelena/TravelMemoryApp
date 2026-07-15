@@ -269,8 +269,7 @@ struct TripsListView: View {
                     }
 
                     Text(info.title)
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodyLargeSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
 
                     HStack(spacing: 6) {

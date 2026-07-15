@@ -118,6 +118,18 @@ struct VoyagerFont {
     
     /// Inter 15px Medium — medium weight body
     static let bodyMedium: Font = .custom("Inter-Medium", size: 15, relativeTo: .subheadline)
+
+    // Real font faces for emphasis — .fontWeight() can't synthesize
+    // weights on a named custom face (logs "Unable to update Font
+    // Descriptor's weight"), so emphasized text picks the actual file
+    /// Inter 17px Semibold — emphasized body
+    static let bodyLargeSemibold: Font = .custom("Inter-SemiBold", size: 17, relativeTo: .body)
+    /// Inter 17px Medium
+    static let bodyLargeMedium: Font = .custom("Inter-Medium", size: 17, relativeTo: .body)
+    /// Inter 15px Semibold
+    static let bodySmallSemibold: Font = .custom("Inter-SemiBold", size: 15, relativeTo: .subheadline)
+    /// Inter 15px Medium (alias of bodyMedium, reads better at call sites)
+    static let bodySmallMedium: Font = .custom("Inter-Medium", size: 15, relativeTo: .subheadline)
 }
 
 // MARK: - Spacing Tokens

@@ -173,8 +173,7 @@ struct TripPlanningView: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(VoyagerFont.bodySmall)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodySmallSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(subtitle)
                         .font(.system(size: 11))

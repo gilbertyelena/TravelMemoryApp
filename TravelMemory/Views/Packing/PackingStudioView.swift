@@ -151,8 +151,7 @@ struct PackingListView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(packedItems) of \(totalItems) packed")
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.medium)
+                        .font(VoyagerFont.bodyLargeMedium)
                         .foregroundStyle(Color.voyagerOnSurface)
                     Text(progress >= 1.0 ? "All packed! ✈️" : "Keep going...")
                         .font(VoyagerFont.bodySmall)
@@ -219,8 +218,7 @@ struct PackingListView: View {
                         .font(.system(size: 14))
                         .foregroundStyle(Color(hex: category.colorHex))
                     Text(category.name)
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodyLargeSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                 }
                 

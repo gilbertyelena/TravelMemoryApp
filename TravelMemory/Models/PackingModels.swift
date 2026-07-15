@@ -19,7 +19,13 @@ final class PackingCategoryModel {
     var colorHex: String = ""  // Store color as hex for persistence
     var sortOrder: Int = 0
     
-    @Relationship(deleteRule: .cascade) var items: [PackingItemModel] = []
+    // Optional storage for CloudKit; the app uses the accessor below
+    @Relationship(deleteRule: .cascade, originalName: "items") private var itemsStorage: [PackingItemModel]? = []
+
+    var items: [PackingItemModel] {
+        get { itemsStorage ?? [] }
+        set { itemsStorage = newValue }
+    }
     var trip: Trip?
     
     init(

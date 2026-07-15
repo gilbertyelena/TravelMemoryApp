@@ -158,8 +158,7 @@ struct SearchSuggestionRow: View {
                 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                        .font(VoyagerFont.bodySmall)
-                        .fontWeight(.medium)
+                        .font(VoyagerFont.bodySmallMedium)
                         .foregroundStyle(Color.voyagerOnSurface)
                         .lineLimit(1)
                     

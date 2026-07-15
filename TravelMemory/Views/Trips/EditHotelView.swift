@@ -235,8 +235,7 @@ struct EditHotelView: View {
                                     .frame(width: 24)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(name)
-                                        .font(VoyagerFont.bodySmall)
-                                        .fontWeight(.medium)
+                                        .font(VoyagerFont.bodySmallMedium)
                                         .foregroundStyle(Color.voyagerOnSurface)
                                         .lineLimit(1)
                                     Text(addr)
@@ -310,8 +309,7 @@ struct EditHotelView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(hotelName)
-                        .font(VoyagerFont.bodyLarge)
-                        .fontWeight(.semibold)
+                        .font(VoyagerFont.bodyLargeSemibold)
                         .foregroundStyle(Color.voyagerOnSurface)
                     if !address.isEmpty {
                         Text(address)

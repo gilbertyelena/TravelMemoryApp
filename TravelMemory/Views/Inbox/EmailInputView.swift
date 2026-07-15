@@ -472,8 +472,7 @@ struct ParseResultView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(hotel.hotelName.isEmpty ? "Unknown Hotel" : hotel.hotelName)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Spacer()
                 confidencePill(hotel.confidence)
@@ -510,8 +509,7 @@ struct ParseResultView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(car.company.isEmpty ? "Car Rental" : car.company)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Spacer()
                 confidencePill(car.confidence)
@@ -553,8 +551,7 @@ struct ParseResultView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(dining.restaurantName.isEmpty ? "Dining Reservation" : dining.restaurantName)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Spacer()
                 confidencePill(dining.confidence)
@@ -590,8 +587,7 @@ struct ParseResultView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(activity.activityName.isEmpty ? "Activity" : activity.activityName)
-                    .font(VoyagerFont.bodyLarge)
-                    .fontWeight(.semibold)
+                    .font(VoyagerFont.bodyLargeSemibold)
                     .foregroundStyle(Color.voyagerOnSurface)
                 Spacer()
                 confidencePill(activity.confidence)
