@@ -172,7 +172,8 @@ struct SpatialMemoryBridgeView: View {
         }
         
         CLGeocoder().geocodeAddressString(locationToGeocode) { placemarks, _ in
-            if let coord = placemarks?.first?.location?.coordinate {
+            guard let coord = placemarks?.first?.location?.coordinate else { return }
+            DispatchQueue.main.async {
                 withAnimation {
                     cameraPosition = .region(MKCoordinateRegion(
                         center: coord,

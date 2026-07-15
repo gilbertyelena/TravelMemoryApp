@@ -440,21 +440,23 @@ struct EditDiningView: View {
         let geocoder = CLGeocoder()
         geocoder.geocodeAddressString(locationToGeocode) { placemarks, _ in
             if let loc = placemarks?.first?.location {
-                self.searchManager.searchRegion = MKCoordinateRegion(
+                let region = MKCoordinateRegion(
                     center: loc.coordinate,
                     latitudinalMeters: 30_000,
                     longitudinalMeters: 30_000
                 )
+                DispatchQueue.main.async { self.searchManager.searchRegion = region }
             } else if !tripDest.isEmpty && !hotelAddress.isEmpty {
                 // Hotel geocode failed, try trip destination
                 let fallbackGeocoder = CLGeocoder()
                 fallbackGeocoder.geocodeAddressString(tripDest) { placemarks, _ in
                     if let loc = placemarks?.first?.location {
-                        self.searchManager.searchRegion = MKCoordinateRegion(
+                        let region = MKCoordinateRegion(
                             center: loc.coordinate,
                             latitudinalMeters: 30_000,
                             longitudinalMeters: 30_000
                         )
+                        DispatchQueue.main.async { self.searchManager.searchRegion = region }
                     }
                 }
             }
