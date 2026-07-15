@@ -10,5 +10,40 @@
 	<string>Travel Steward reads your calendar to import booking events into your trip itinerary.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Travel Steward reads your calendar to import booking events into your trip itinerary.</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.alenka.travelsteward.trip</string>
+			<key>UTTypeDescription</key>
+			<string>Travel Steward Trip</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>travelsteward</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Travel Steward Trip</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.alenka.travelsteward.trip</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

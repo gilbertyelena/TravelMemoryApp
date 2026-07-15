@@ -14,6 +14,13 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var pendingEmail: SharedDataStore.SharedEmail?
+    @State private var incomingTripFile: IncomingTripFile?
+
+    /// Identifiable wrapper so .sheet(item:) can't present empty
+    struct IncomingTripFile: Identifiable {
+        let id = UUID()
+        let url: URL
+    }
 
     var body: some View {
         ZStack {
@@ -27,6 +34,14 @@ struct ContentView: View {
                 }
                 .onAppear {
                     checkForPendingEmails()
+                }
+                .onOpenURL { url in
+                    if url.pathExtension.lowercased() == "travelsteward" {
+                        incomingTripFile = IncomingTripFile(url: url)
+                    }
+                }
+                .sheet(item: $incomingTripFile) { file in
+                    TripShareReceiveView(fileURL: file.url)
                 }
                 .sheet(item: $pendingEmail) { email in
                     PendingEmailProcessView(email: email) {

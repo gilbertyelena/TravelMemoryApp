@@ -233,12 +233,34 @@ struct BackupService {
         return url
     }
 
-    // MARK: Restore
+    // MARK: Trip Sharing
 
-    /// Imports an archive, skipping trips/documents whose id already
-    /// exists. Safe to run repeatedly.
-    @discardableResult
-    static func restore(from url: URL, context: ModelContext) throws -> RestoreSummary {
+    /// One trip as a shareable file. Same archive format as a full
+    /// backup, so receiving is just a restore — merge-by-id keeps a
+    /// re-sent trip from duplicating.
+    static func exportTrip(_ trip: Trip) throws -> URL {
+        var archive = BackupArchive()
+        archive.trips = [backup(of: trip)]
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(archive)
+
+        let name = trip.name.isEmpty ? "Trip" : trip.name
+        let safeName = name.components(separatedBy: CharacterSet(charactersIn: "/\\:?%*|\"<>")).joined()
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(safeName).travelsteward")
+        try data.write(to: url, options: .atomic)
+        return url
+    }
+
+    /// Reads an archive without importing anything — powers the
+    /// "someone sent you a trip" confirmation screen.
+    static func peek(at url: URL) throws -> BackupArchive {
+        try loadArchive(from: url)
+    }
+
+    private static func loadArchive(from url: URL) throws -> BackupArchive {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
 
@@ -253,6 +275,16 @@ struct BackupService {
         guard archive.version <= 1 else {
             throw BackupError.incompatibleVersion(archive.version)
         }
+        return archive
+    }
+
+    // MARK: Restore
+
+    /// Imports an archive, skipping trips/documents whose id already
+    /// exists. Safe to run repeatedly.
+    @discardableResult
+    static func restore(from url: URL, context: ModelContext) throws -> RestoreSummary {
+        let archive = try loadArchive(from: url)
 
         var summary = RestoreSummary()
 

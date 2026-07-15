@@ -685,6 +685,31 @@ struct BackupServiceTests {
         #expect(documents.first?.imageData == Data([1, 2, 3]))
     }
 
+    @Test func sharedTripFileRoundTripsToAnotherDevice() throws {
+        // "Send Trip to a Friend": one trip exported as .travelsteward,
+        // opened on a device that has never seen it
+        let source = try makeContainer()
+        let trip = seedTrip(in: source.mainContext)
+        try source.mainContext.save()
+
+        let url = try BackupService.exportTrip(trip)
+        #expect(url.lastPathComponent == "Munich Trip.travelsteward")
+
+        let peeked = try BackupService.peek(at: url)
+        #expect(peeked.trips.count == 1)
+        #expect(peeked.trips.first?.flights.count == 1)
+        #expect(peeked.vaultDocuments.isEmpty) // sharing a trip never leaks the vault
+
+        let friend = try makeContainer()
+        let summary = try BackupService.restore(from: url, context: friend.mainContext)
+        #expect(summary.tripsRestored == 1)
+
+        let restored = try #require(try friend.mainContext.fetch(FetchDescriptor<Trip>()).first)
+        #expect(restored.name == "Munich Trip")
+        #expect(restored.flights.first?.flightNumber == "FR1885")
+        #expect(restored.dining.first?.restaurantName == "Tantris")
+    }
+
     @Test func restoringTwiceNeverDuplicates() throws {
         let container = try makeContainer()
         _ = seedTrip(in: container.mainContext)

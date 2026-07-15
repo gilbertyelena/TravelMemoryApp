@@ -189,6 +189,12 @@ struct TripDetailView: View {
                     } label: {
                         Label("Share Calendar (.ics)", systemImage: "calendar.badge.plus")
                     }
+                    Divider()
+                    Button {
+                        if let url = try? BackupService.exportTrip(trip) { shareItems = [url] }
+                    } label: {
+                        Label("Send Trip to a Friend", systemImage: "person.crop.circle.badge.plus")
+                    }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundStyle(Color.voyagerPrimary)
