@@ -606,6 +606,60 @@ struct DuplicateImportTests {
     }
 }
 
+@MainActor
+struct CalendarSyncBuilderTests {
+
+    @Test func buildsEventsForBookedItemsOnly() throws {
+        let trip = Trip(name: "Munich", destination: "Munich",
+                        startDate: Date(timeIntervalSince1970: 1_760_000_000),
+                        endDate: Date(timeIntervalSince1970: 1_760_500_000))
+
+        let flight = FlightSegment(airline: "Ryanair", flightNumber: "FR1885",
+                                   departureAirport: "STN", arrivalAirport: "MUC",
+                                   departureTime: Date(timeIntervalSince1970: 1_760_010_000),
+                                   arrivalTime: Date(timeIntervalSince1970: 1_760_020_000),
+                                   seat: "14A")
+        flight.timeZoneID = "Europe/London"
+        trip.flights.append(flight)
+
+        let hotel = HotelBooking(hotelName: "Bergblick Garni",
+                                 checkInDate: Date(timeIntervalSince1970: 1_760_020_000),
+                                 checkOutDate: Date(timeIntervalSince1970: 1_760_400_000))
+        trip.hotels.append(hotel)
+
+        let idea = DiningReservation(restaurantName: "Tantris")
+        idea.status = .idea
+        trip.dining.append(idea)
+
+        let events = CalendarSyncService.events(for: trip)
+
+        #expect(events.count == 2) // idea stays out of the calendar
+
+        let flightEvent = try #require(events.first { $0.title.contains("FR1885") })
+        #expect(flightEvent.title.contains("STN → MUC"))
+        #expect(flightEvent.isAllDay == false)
+        #expect(flightEvent.timeZoneID == "Europe/London")
+        #expect(flightEvent.notes.contains("Seat 14A"))
+
+        let hotelEvent = try #require(events.first { $0.title.contains("Bergblick") })
+        #expect(hotelEvent.isAllDay == true)
+        #expect(hotelEvent.start == hotel.checkInDate)
+        #expect(hotelEvent.end == hotel.checkOutDate)
+    }
+
+    @Test func zeroLengthTimesGetSensibleDurations() {
+        let trip = Trip(name: "T", destination: "",
+                        startDate: .now, endDate: .now)
+        let sameInstant = Date(timeIntervalSince1970: 1_760_000_000)
+        let flight = FlightSegment(flightNumber: "LH411",
+                                   departureTime: sameInstant, arrivalTime: sameInstant)
+        trip.flights.append(flight)
+
+        let events = CalendarSyncService.events(for: trip)
+        #expect(events.first.map { $0.end > $0.start } == true)
+    }
+}
+
 struct AirlineCheckInTests {
 
     @Test func resolvesCheckInURLFromFlightNumberDesignator() throws {

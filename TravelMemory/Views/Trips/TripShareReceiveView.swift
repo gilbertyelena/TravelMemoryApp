@@ -163,6 +163,7 @@ struct TripShareReceiveView: View {
             if let trips = try? modelContext.fetch(FetchDescriptor<Trip>()) {
                 for trip in trips { TripNotifications.resync(trip: trip) }
             }
+            CalendarSyncService.requestResync(context: modelContext)
             summaryText = summary.text
         } catch {
             errorText = error.localizedDescription

@@ -454,6 +454,7 @@ struct EditFlightView: View {
         flight.arrivalTimeZoneID = arrivalZone.identifier
         modelContext.saveOrLog()
         TripNotifications.resync(item: flight, itemID: flight.id)
+        CalendarSyncService.requestResync(context: modelContext)
         isFinalized = true
     }
 

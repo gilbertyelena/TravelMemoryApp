@@ -31,6 +31,9 @@ struct ContentView: View {
                     }
                     // Keep the widget's "next up" snapshot fresh
                     WidgetSnapshotService.refresh(context: modelContext)
+                    // Catch-all for changes made since the last sync
+                    // (deletes, imports) — no-op unless enabled
+                    CalendarSyncService.requestResync(context: modelContext)
                 }
                 .onAppear {
                     checkForPendingEmails()

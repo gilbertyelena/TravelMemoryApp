@@ -155,6 +155,7 @@ struct EditCarView: View {
         car.isPrepaid = isPrepaid
         modelContext.saveOrLog()
         TripNotifications.resync(item: car, itemID: car.id)
+        CalendarSyncService.requestResync(context: modelContext)
         dismiss()
     }
     

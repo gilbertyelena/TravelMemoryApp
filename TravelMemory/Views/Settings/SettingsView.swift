@@ -22,6 +22,7 @@ struct SettingsView: View {
     @AppStorage("checkinLeadHours") private var checkinLeadHours = 24
     @AppStorage("reminderLeadHours") private var reminderLeadHours = 2
     @AppStorage("defaultCurrencyCode") private var defaultCurrency = ""
+    @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled = false
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -57,6 +58,22 @@ struct SettingsView: View {
                             selection: $reminderLeadHours,
                             options: [(1, "1h before"), (2, "2h before"), (3, "3h before")]
                         )
+                    }
+                }
+
+                section("CALENDAR") {
+                    toggleRow(
+                        icon: "calendar.badge.checkmark",
+                        title: "Keep trips in my Calendar",
+                        subtitle: "A \"Travel Steward\" calendar that updates as your itinerary changes",
+                        isOn: $calendarSyncEnabled
+                    )
+                }
+                .onChange(of: calendarSyncEnabled) { _, enabled in
+                    if enabled {
+                        Task { await CalendarSyncService.resyncAll(context: modelContext) }
+                    } else {
+                        CalendarSyncService.disable()
                     }
                 }
 

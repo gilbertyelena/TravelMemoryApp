@@ -218,6 +218,7 @@ final class EmailIngestionService: ObservableObject {
         modelContext.saveOrLog()
 
         TripNotifications.resync(trip: trip)
+        CalendarSyncService.requestResync(context: modelContext)
 
         return trip
     }

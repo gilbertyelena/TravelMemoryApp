@@ -602,6 +602,7 @@ struct EditDiningView: View {
         reservation.notes = notes
         modelContext.saveOrLog()
         TripNotifications.resync(item: reservation, itemID: reservation.id)
+        CalendarSyncService.requestResync(context: modelContext)
         dismiss()
     }
 }

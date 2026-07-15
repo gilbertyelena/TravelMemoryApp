@@ -207,6 +207,7 @@ struct EditActivityView: View {
         activity.priceInfo = priceInfo
         modelContext.saveOrLog()
         TripNotifications.resync(item: activity, itemID: activity.id)
+        CalendarSyncService.requestResync(context: modelContext)
         dismiss()
     }
     
