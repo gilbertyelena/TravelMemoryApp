@@ -60,6 +60,7 @@ struct NearbyPlace: Identifiable {
 // MARK: - Explore View
 
 struct SpatialMemoryBridgeView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Trip.startDate, order: .forward) private var trips: [Trip]
     @StateObject private var geoService = TripGeocodingService()
     @State private var selectedPin: TripMapPin?
@@ -72,6 +73,11 @@ struct SpatialMemoryBridgeView: View {
     @State private var searchText = ""
     @State private var hasSetInitialPosition = false
     @FocusState private var searchFocused: Bool
+    /// Search-result place the user tapped (pin or list row)
+    @State private var selectedPlace: NearbyPlace?
+    /// Trip the current nearby search belongs to — where ADD TO TRIP saves
+    @State private var searchTrip: Trip?
+    @State private var addedPlaceIDs: Set<UUID> = []
     
     private var mapPins: [TripMapPin] {
         trips.compactMap { trip in
@@ -113,6 +119,7 @@ struct SpatialMemoryBridgeView: View {
             setInitialPosition()
         }
         .animation(.easeOut(duration: 0.3), value: selectedPin?.id)
+        .animation(.easeOut(duration: 0.3), value: selectedPlace?.id)
     }
     
     // MARK: - Map Layer
@@ -227,6 +234,7 @@ struct SpatialMemoryBridgeView: View {
                     withAnimation {
                         nearbyResults = []
                         searchCategory = ""
+                        selectedPlace = nil
                     }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -276,8 +284,9 @@ struct SpatialMemoryBridgeView: View {
         let searchNear = hotelAddress.isEmpty ? dest : hotelAddress
         
         guard !searchNear.isEmpty else { return }
-        
+
         searchCategory = query.capitalized
+        searchTrip = trip
         isSearching = true
         
         CLGeocoder().geocodeAddressString(searchNear) { placemarks, _ in
@@ -309,7 +318,8 @@ struct SpatialMemoryBridgeView: View {
                             )
                         }
                         selectedPin = nil
-                        
+                        selectedPlace = nil
+
                         cameraPosition = .region(MKCoordinateRegion(
                             center: location.coordinate,
                             latitudinalMeters: 6000,
@@ -328,6 +338,11 @@ struct SpatialMemoryBridgeView: View {
         if trips.isEmpty {
             emptyState
                 .padding(.bottom, 120)
+        } else if let place = selectedPlace {
+            selectedPlaceCard(place)
+                .padding(.horizontal, VoyagerSpacing.marginMain)
+                .padding(.bottom, 110)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
         } else if !nearbyResults.isEmpty {
             nearbyResultsList
                 .padding(.horizontal, VoyagerSpacing.marginMain)
@@ -363,7 +378,7 @@ struct SpatialMemoryBridgeView: View {
                     .frame(width: 32, height: 32)
                     .shadow(color: color.opacity(0.5), radius: 8)
                 
-                Image(systemName: "airplane")
+                Image(systemName: pinIcon(for: pin.trip))
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.white)
             }
@@ -379,6 +394,16 @@ struct SpatialMemoryBridgeView: View {
         }
     }
     
+    /// Icon reflects what the trip actually contains — a hotel-only
+    /// trip gets a bed, not an airplane
+    private func pinIcon(for trip: Trip) -> String {
+        if !trip.flights.isEmpty { return "airplane" }
+        if !trip.hotels.isEmpty { return "bed.double.fill" }
+        if !trip.carRentals.isEmpty { return "car.fill" }
+        if !trip.dining.isEmpty || !trip.activities.isEmpty { return "star.fill" }
+        return "mappin"
+    }
+
     // MARK: - Selected Pin Card
     
     private func selectedPinCard(_ pin: TripMapPin) -> some View {
@@ -416,9 +441,9 @@ struct SpatialMemoryBridgeView: View {
             
             // Quick-action map links
             HStack(spacing: 8) {
-                mapSearchButton(icon: "fork.knife", label: "Restaurants", query: "restaurants", destination: pin.name)
-                mapSearchButton(icon: "bed.double", label: "Hotels", query: "hotels", destination: pin.name)
-                mapSearchButton(icon: "star", label: "Attractions", query: "attractions", destination: pin.name)
+                mapSearchButton(icon: "fork.knife", label: "Restaurants", query: "restaurants", pin: pin)
+                mapSearchButton(icon: "bed.double", label: "Hotels", query: "hotels", pin: pin)
+                mapSearchButton(icon: "star", label: "Attractions", query: "attractions", pin: pin)
             }
 
             Button {
@@ -529,14 +554,17 @@ struct SpatialMemoryBridgeView: View {
     // MARK: - Nearby Pin View
     
     private func nearbyPinView(_ place: NearbyPlace) -> some View {
-        VStack(spacing: 0) {
+        let isSelected = selectedPlace?.id == place.id
+
+        return VStack(spacing: 0) {
             ZStack {
                 Circle()
                     .fill(Color.voyagerTertiary)
-                    .frame(width: 26, height: 26)
+                    .frame(width: isSelected ? 32 : 26, height: isSelected ? 32 : 26)
                     .shadow(color: Color.voyagerTertiary.opacity(0.5), radius: 6)
+                    .overlay(Circle().stroke(.white, lineWidth: isSelected ? 2 : 0))
                 Image(systemName: categoryIcon(searchCategory))
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: isSelected ? 13 : 11, weight: .bold))
                     .foregroundStyle(.white)
             }
             Triangle()
@@ -544,6 +572,135 @@ struct SpatialMemoryBridgeView: View {
                 .frame(width: 10, height: 6)
                 .offset(y: -2)
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation { selectedPlace = place }
+        }
+    }
+
+    // MARK: - Selected Place Card
+
+    private func selectedPlaceCard(_ place: NearbyPlace) -> some View {
+        let added = addedPlaceIDs.contains(place.id)
+
+        return VStack(spacing: 12) {
+            HStack(spacing: 14) {
+                Circle()
+                    .fill(Color.voyagerTertiary.opacity(0.12))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: categoryIcon(place.category))
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.voyagerTertiary)
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(place.name)
+                        .font(VoyagerFont.bodyLarge)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.voyagerOnSurface)
+                        .lineLimit(2)
+                    if !place.address.isEmpty {
+                        Text(place.address)
+                            .font(VoyagerFont.bodySmall)
+                            .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer()
+
+                Button {
+                    withAnimation { selectedPlace = nil }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Color.voyagerOnSurfaceVariant)
+                }
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    addToTrip(place)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: added ? "checkmark" : "plus")
+                            .font(.system(size: 12, weight: .bold))
+                        Text(added ? "ADDED TO TRIP" : "ADD TO TRIP")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.6)
+                    }
+                    .foregroundStyle(added ? Color.voyagerPrimaryAccent : .white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(added ? Color.voyagerPrimaryAccent.opacity(0.15) : Color.voyagerPrimaryAccent)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .disabled(added)
+
+                Button {
+                    openInAppleMaps(place: place)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "map")
+                            .font(.system(size: 12))
+                        Text("MAPS")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.6)
+                    }
+                    .foregroundStyle(Color.voyagerPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.voyagerPrimary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: VoyagerRadius.large)
+                .fill(Color.voyagerCard.opacity(0.95))
+                .background(
+                    RoundedRectangle(cornerRadius: VoyagerRadius.large)
+                        .fill(.ultraThinMaterial)
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: VoyagerRadius.large)
+                .stroke(Color.voyagerOutlineVariant.opacity(0.2), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
+    }
+
+    /// Saves the tapped place onto the searched trip as an idea —
+    /// restaurants become dining ideas, everything else an activity
+    private func addToTrip(_ place: NearbyPlace) {
+        guard let trip = searchTrip ?? primaryTrip else { return }
+
+        if place.category.lowercased().contains("restaurant") {
+            let evening = trip.calendar.date(bySettingHour: 19, minute: 30, second: 0, of: trip.startDate) ?? trip.startDate
+            let idea = DiningReservation(
+                restaurantName: place.name,
+                address: place.address,
+                reservationTime: evening
+            )
+            idea.status = .idea
+            idea.trip = trip
+            modelContext.insert(idea)
+        } else {
+            let midday = trip.calendar.date(bySettingHour: 11, minute: 0, second: 0, of: trip.startDate) ?? trip.startDate
+            let idea = TripActivity(
+                activityName: place.name,
+                location: place.address,
+                startTime: midday,
+                endTime: midday.addingTimeInterval(2 * 3600)
+            )
+            idea.status = .idea
+            idea.trip = trip
+            modelContext.insert(idea)
+        }
+        modelContext.saveOrLog()
+        withAnimation { _ = addedPlaceIDs.insert(place.id) }
     }
     
     // MARK: - Nearby Results List
@@ -565,6 +722,7 @@ struct SpatialMemoryBridgeView: View {
                     withAnimation {
                         nearbyResults = []
                         searchCategory = ""
+                        selectedPlace = nil
                     }
                 } label: {
                     HStack(spacing: 4) {
@@ -618,6 +776,17 @@ struct SpatialMemoryBridgeView: View {
                                     .foregroundStyle(Color.voyagerPrimary)
                             }
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation {
+                                selectedPlace = place
+                                cameraPosition = .region(MKCoordinateRegion(
+                                    center: place.coordinate,
+                                    latitudinalMeters: 1500,
+                                    longitudinalMeters: 1500
+                                ))
+                            }
+                        }
                     }
                 }
             }
@@ -641,9 +810,9 @@ struct SpatialMemoryBridgeView: View {
     
     // MARK: - Map Search Helpers
     
-    private func mapSearchButton(icon: String, label: String, query: String, destination: String) -> some View {
+    private func mapSearchButton(icon: String, label: String, query: String, pin: TripMapPin) -> some View {
         Button {
-            searchNearby(query: query, destination: destination)
+            searchNearby(query: query, destination: pin.name, trip: pin.trip)
         } label: {
             HStack(spacing: 5) {
                 if isSearching && searchCategory == label {
@@ -670,8 +839,9 @@ struct SpatialMemoryBridgeView: View {
         .buttonStyle(.plain)
     }
     
-    private func searchNearby(query: String, destination: String) {
+    private func searchNearby(query: String, destination: String, trip: Trip) {
         searchCategory = query.capitalized
+        searchTrip = trip
         isSearching = true
         
         // First geocode the destination, then search nearby
@@ -704,7 +874,8 @@ struct SpatialMemoryBridgeView: View {
                             )
                         }
                         selectedPin = nil
-                        
+                        selectedPlace = nil
+
                         // Zoom to show results
                         cameraPosition = .region(MKCoordinateRegion(
                             center: location.coordinate,
